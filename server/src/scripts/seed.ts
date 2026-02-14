@@ -1,6 +1,23 @@
-import { TarotCard } from './types';
+import sequelize, { connectDatabase } from '../config/database';
+import { Card } from '../models';
+import dotenv from 'dotenv';
 
-// Helper function to get card image path
+dotenv.config();
+
+// Import card data from frontend
+interface TarotCard {
+  id: number;
+  name: string;
+  slug: string;
+  imagePath: string;
+  keywords: string[];
+  uprightMeaning: string;
+  reversedMeaning: string;
+  description: string;
+  group: string;
+}
+
+// Define all tarot cards (copied from frontend)
 const getCardImage = (cardName: string): string => {
   return `/src/tarrotcard/${cardName}.jpg`;
 };
@@ -30,7 +47,7 @@ const majorArcana: TarotCard[] = [
   { id: 21, name: 'The World', slug: 'the-world', imagePath: getCardImage('The World'), keywords: ['Hoàn thành', 'Trọn vẹn', 'Thành tựu'], uprightMeaning: 'Hoàn thành một chu kỳ lớn. Thành tựu và sự trọn vẹn đang đến.', reversedMeaning: 'Chưa hoàn thành, thiếu kết thúc, trì hoãn.', description: 'The World tượng trưng cho sự hoàn thành, trọn vẹn và thành tựu cuối cùng.', group: 'major' },
 ];
 
-function createMinorCards(suit: string, suitVi: string, group: TarotCard['group']): TarotCard[] {
+function createMinorCards(suit: string, suitVi: string, group: string): TarotCard[] {
   const courtCards = ['Page', 'Knight', 'Queen', 'King'];
   const courtVi = ['Thị vệ', 'Hiệp sĩ', 'Nữ hoàng', 'Vua'];
   const cards: TarotCard[] = [];
@@ -44,18 +61,9 @@ function createMinorCards(suit: string, suitVi: string, group: TarotCard['group'
 
   const baseId = group === 'wands' ? 22 : group === 'cups' ? 36 : group === 'swords' ? 50 : 64;
 
-  // Number cards mapping
   const numberNames: Record<number, string> = {
-    1: 'Ace',
-    2: 'Two',
-    3: 'Three',
-    4: 'Four',
-    5: 'Five',
-    6: 'Six',
-    7: 'Seven',
-    8: 'Eight',
-    9: 'Nine',
-    10: 'Ten'
+    1: 'Ace', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five',
+    6: 'Six', 7: 'Seven', 8: 'Eight', 9: 'Nine', 10: 'Ten'
   };
 
   for (let i = 1; i <= 14; i++) {
@@ -63,8 +71,6 @@ function createMinorCards(suit: string, suitVi: string, group: TarotCard['group'
     const name = isNumber ? `${i === 1 ? 'Ace' : numberNames[i]} of ${suit}` : `${courtCards[i - 11]} of ${suit}`;
     const nameVi = isNumber ? `${i === 1 ? 'Át' : i} ${suitVi}` : `${courtVi[i - 11]} ${suitVi}`;
     const slug = name.toLowerCase().replace(/ /g, '-');
-    
-    // Use actual file names from tarrotcard folder
     const imagePath = getCardImage(name);
 
     cards.push({
@@ -83,7 +89,7 @@ function createMinorCards(suit: string, suitVi: string, group: TarotCard['group'
   return cards;
 }
 
-export const allCards: TarotCard[] = [
+const allCards: TarotCard[] = [
   ...majorArcana,
   ...createMinorCards('Wands', 'Gậy', 'wands'),
   ...createMinorCards('Cups', 'Cốc', 'cups'),
@@ -91,19 +97,26 @@ export const allCards: TarotCard[] = [
   ...createMinorCards('Pentacles', 'Xu', 'pentacles'),
 ];
 
-export function getCardBySlug(slug: string): TarotCard | undefined {
-  return allCards.find(c => c.slug === slug);
-}
+const seedDatabase = async () => {
+  try {
+    console.log('🌱 Starting database seed...');
 
-export function getCardById(id: number): TarotCard | undefined {
-  return allCards.find(c => c.id === id);
-}
+    // Connect to database
+    await connectDatabase();
 
-export const cardGroups = [
-  { id: 'all' as const, label: 'Tất cả' },
-  { id: 'major' as const, label: 'Major Arcana' },
-  { id: 'wands' as const, label: 'Wands (Gậy)' },
-  { id: 'cups' as const, label: 'Cups (Cốc)' },
-  { id: 'swords' as const, label: 'Swords (Kiếm)' },
-  { id: 'pentacles' as const, label: 'Pentacles (Xu)' },
-];
+    // Clear existing cards
+    await Card.destroy({ where: {}, truncate: true });
+    console.log('🗑️  Cleared existing cards');
+
+    // Insert all cards
+    await Card.bulkCreate(allCards as any[]);
+    console.log(`✅ Successfully seeded ${allCards.length} tarot cards!`);
+
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Seed failed:', error);
+    process.exit(1);
+  }
+};
+
+seedDatabase();
