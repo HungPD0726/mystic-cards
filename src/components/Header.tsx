@@ -1,10 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Sparkles, BookOpen, Home } from 'lucide-react';
+import { Sparkles, BookOpen, Home, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { to: '/', label: 'Trang chủ', icon: Home },
   { to: '/reading', label: 'Xem bói', icon: Sparkles },
+  { to: '/history', label: 'Lịch sử', icon: History },
   { to: '/cards', label: 'Thư viện', icon: BookOpen },
 ];
 
