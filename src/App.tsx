@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import ReadingPicker from "./pages/ReadingPicker";
 import ReadingDraw from "./pages/ReadingDraw";
 import ReadingResult from "./pages/ReadingResult";
+import ReadingHistory from "./pages/ReadingHistory";
 import CardLibrary from "./pages/CardLibrary";
 import CardDetail from "./pages/CardDetail";
 import NotFound from "./pages/NotFound";
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/reading" element={<ReadingPicker />} />
             <Route path="/reading/:spread" element={<ReadingDraw />} />
             <Route path="/reading/:spread/result" element={<ReadingResult />} />
+            <Route path="/history" element={<ReadingHistory />} />
             <Route path="/cards" element={<CardLibrary />} />
             <Route path="/cards/:slug" element={<CardDetail />} />
             <Route path="*" element={<NotFound />} />
