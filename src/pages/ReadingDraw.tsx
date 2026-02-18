@@ -7,7 +7,7 @@ import { MeaningDialog } from '@/components/MeaningDialog';
 import { CardBack } from '@/components/TarotCard';
 import { useTarotReading } from '@/hooks/useTarotReading';
 import { SpreadType, DrawnCard } from '@/data/types';
-import { Shuffle, Layers, RotateCcw, ArrowRight } from 'lucide-react';
+import { Shuffle, Layers, RotateCcw, ArrowRight, Sparkles } from 'lucide-react';
 
 const ReadingDraw = () => {
   const { spread: spreadId } = useParams<{ spread: string }>();
@@ -29,8 +29,7 @@ const ReadingDraw = () => {
     setDialogOpen(true);
   };
 
-  const handleViewResult = () => {
-    // Store drawn cards in sessionStorage for result page
+  const storeReadingData = () => {
     sessionStorage.setItem('tarot-current-reading', JSON.stringify({
       spreadType: spreadId,
       spreadName: reading.spread?.name,
@@ -47,6 +46,17 @@ const ReadingDraw = () => {
         description: dc.card.description,
       })),
     }));
+  };
+
+  const handleViewResult = () => {
+    storeReadingData();
+    sessionStorage.removeItem('tarot-auto-ai');
+    navigate(`/reading/${spreadId}/result`);
+  };
+
+  const handleAIInterpret = () => {
+    storeReadingData();
+    sessionStorage.setItem('tarot-auto-ai', 'true');
     navigate(`/reading/${spreadId}/result`);
   };
 
@@ -124,14 +134,25 @@ const ReadingDraw = () => {
         )}
 
         {reading.allRevealed && (
-          <Button
-            onClick={handleViewResult}
-            className="gap-2 glow-gold"
-            size="lg"
-          >
-            <ArrowRight className="h-4 w-4" />
-            Xem kết quả
-          </Button>
+          <>
+            <Button
+              onClick={handleAIInterpret}
+              className="gap-2 glow-gold"
+              size="lg"
+            >
+              <Sparkles className="h-4 w-4" />
+              🤖 AI Luận Giải
+            </Button>
+            <Button
+              onClick={handleViewResult}
+              variant="outline"
+              className="gap-2 border-gold/30 text-gold hover:bg-secondary"
+              size="lg"
+            >
+              <ArrowRight className="h-4 w-4" />
+              Xem kết quả
+            </Button>
+          </>
         )}
 
         {reading.isShuffled && (

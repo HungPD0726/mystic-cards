@@ -9,6 +9,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -53,13 +54,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (error) throw new Error(error.message);
   }, []);
 
+  const loginWithGoogle = useCallback(async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) throw new Error(error.message);
+  }, []);
+
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
   }, []);
 
   return (
     <AuthContext.Provider
-      value={{ user, session, isLoading, isAuthenticated, login, register, logout }}
+      value={{ user, session, isLoading, isAuthenticated, login, register, loginWithGoogle, logout }}
     >
       {children}
     </AuthContext.Provider>

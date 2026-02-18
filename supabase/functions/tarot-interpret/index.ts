@@ -14,9 +14,9 @@ serve(async (req) => {
   try {
     const { drawnCards, spreadName } = await req.json();
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const GOOGLE_API_KEY = Deno.env.get("GOOGLE_API_KEY");
+    if (!GOOGLE_API_KEY) {
+      throw new Error("GOOGLE_API_KEY is not configured");
     }
 
     // Build card descriptions for the prompt
@@ -36,20 +36,21 @@ serve(async (req) => {
     const userPrompt = `Hãy luận giải trải bài Tarot "${spreadName}" với các lá bài sau:\n\n${cardDescriptions}\n\nVui lòng:\n1. Phân tích tổng thể năng lượng của trải bài\n2. Diễn giải ý nghĩa từng lá bài theo vị trí\n3. Đưa ra thông điệp tổng hợp và lời khuyên thiết thực\n\nViết bằng tiếng Việt, văn phong huyền bí nhưng dễ hiểu, khoảng 200-300 từ.`;
 
     const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_API_KEY}`,
       {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: systemPrompt + "\n\n" + userPrompt }],
+            },
           ],
-          stream: false,
+          generationConfig: {
+            temperature: 0.8,
+            maxOutputTokens: 1024,
+          },
         }),
       }
     );
@@ -64,23 +65,14 @@ serve(async (req) => {
           }
         );
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Cần nạp thêm credits để sử dụng AI." }),
-          {
-            status: 402,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
       const text = await response.text();
-      console.error("AI gateway error:", response.status, text);
-      throw new Error("AI gateway error");
+      console.error("Google Gemini API error:", response.status, text);
+      throw new Error(`Google Gemini API error: ${response.status}`);
     }
 
     const data = await response.json();
     const interpretation =
-      data.choices?.[0]?.message?.content || "Không thể tạo luận giải.";
+      data.candidates?.[0]?.content?.parts?.[0]?.text || "Không thể tạo luận giải.";
 
     return new Response(JSON.stringify({ interpretation }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

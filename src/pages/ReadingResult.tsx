@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { ReadingHistory, Orientation } from '@/data/types';
 import { Save, Share2, RotateCcw, Sparkles, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { generateTarotInterpretation } from '@/lib/geminiService';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface StoredCard {
@@ -38,43 +39,36 @@ const ReadingResult = () => {
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
-  useEffect(() => {
-    const data = sessionStorage.getItem('tarot-current-reading');
-    if (data) {
-      setReading(JSON.parse(data));
-    }
-  }, []);
-
   const generateAIInterpretation = useCallback(async (readingData: StoredReading) => {
     setIsLoadingAI(true);
     try {
-      const { data, error } = await supabase.functions.invoke('tarot-interpret', {
-        body: {
-          drawnCards: readingData.drawnCards,
-          spreadName: readingData.spreadName,
-        },
-      });
-
-      if (error) throw error;
-      if (data?.error) {
-        if (data.error.includes('429') || data.error.includes('nhiều yêu cầu')) {
-          toast.error('Quá nhiều yêu cầu AI. Vui lòng thử lại sau ít phút.');
-        } else if (data.error.includes('402') || data.error.includes('credits')) {
-          toast.error('Cần nạp thêm credits để dùng AI.');
-        } else {
-          toast.error('Không thể tạo luận giải AI: ' + data.error);
-        }
-        return;
-      }
-
-      setAiInterpretation(data?.interpretation || '');
+      const interpretation = await generateTarotInterpretation(
+        readingData.drawnCards,
+        readingData.spreadName
+      );
+      setAiInterpretation(interpretation);
     } catch (err: any) {
       console.error('AI interpretation error:', err);
-      toast.error('Không thể kết nối AI. Vui lòng thử lại.');
+      toast.error(err.message || 'Không thể kết nối AI. Vui lòng thử lại.');
     } finally {
       setIsLoadingAI(false);
     }
   }, []);
+
+  useEffect(() => {
+    const data = sessionStorage.getItem('tarot-current-reading');
+    if (data) {
+      const parsed = JSON.parse(data);
+      setReading(parsed);
+
+      // Auto-trigger AI interpretation if flagged from ReadingDraw
+      const autoAI = sessionStorage.getItem('tarot-auto-ai');
+      if (autoAI) {
+        sessionStorage.removeItem('tarot-auto-ai');
+        generateAIInterpretation(parsed);
+      }
+    }
+  }, [generateAIInterpretation]);
 
   const handleSave = async () => {
     if (!reading) return;
