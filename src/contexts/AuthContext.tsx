@@ -1,82 +1,65 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import api from '@/lib/api';
-
-interface User {
-  id: number;
-  email: string;
-  username: string;
-}
+import { supabase } from '@/integrations/supabase/client';
+import type { User, Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
+  session: Session | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, username: string, password: string) => Promise<void>;
-  logout: () => void;
+  register: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const isAuthenticated = !!user && !!token;
+  const isAuthenticated = !!user && !!session;
 
-  // Load user from token on mount
   useEffect(() => {
-    const loadUser = async () => {
-      if (token) {
-        try {
-          const { user: userData } = await api.getCurrentUser();
-          setUser(userData);
-        } catch (error) {
-          // Token invalid, clear it
-          localStorage.removeItem('token');
-          setToken(null);
-          setUser(null);
-        }
-      }
+    // Set up auth state listener BEFORE getting session
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
       setIsLoading(false);
-    };
+    });
 
-    loadUser();
-  }, [token]);
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const response = await api.login(email, password);
-    localStorage.setItem('token', response.token);
-    setToken(response.token);
-    setUser(response.user);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw new Error(error.message);
   }, []);
 
-  const register = useCallback(async (email: string, username: string, password: string) => {
-    const response = await api.register(email, username, password);
-    localStorage.setItem('token', response.token);
-    setToken(response.token);
-    setUser(response.user);
+  const register = useCallback(async (email: string, password: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: window.location.origin },
+    });
+    if (error) throw new Error(error.message);
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
   }, []);
 
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        token,
-        isLoading,
-        isAuthenticated,
-        login,
-        register,
-        logout,
-      }}
+      value={{ user, session, isLoading, isAuthenticated, login, register, logout }}
     >
       {children}
     </AuthContext.Provider>

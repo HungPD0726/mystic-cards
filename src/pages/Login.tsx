@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -9,25 +9,16 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
     try {
       await login(email, password);
-      toast({
-        title: 'Đăng nhập thành công! 🎉',
-        description: 'Chào mừng bạn trở lại với Mystic Cards.',
-      });
+      toast.success('Đăng nhập thành công! 🎉');
       navigate('/');
     } catch (error: any) {
-      toast({
-        title: 'Đăng nhập thất bại',
-        description: error.message || 'Email hoặc mật khẩu không đúng.',
-        variant: 'destructive',
-      });
+      toast.error(error.message || 'Email hoặc mật khẩu không đúng.');
     } finally {
       setIsLoading(false);
     }
@@ -37,7 +28,7 @@ const Login = () => {
     <div className="min-h-[80vh] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold text-gold" style={{ fontFamily: 'Cinzel, serif' }}>
             🔮 Đăng Nhập
           </h1>
           <p className="text-muted-foreground mt-2">
@@ -87,10 +78,7 @@ const Login = () => {
 
         <p className="text-center text-muted-foreground mt-6">
           Chưa có tài khoản?{' '}
-          <Link
-            to="/register"
-            className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
-          >
+          <Link to="/register" className="text-gold hover:text-gold/80 font-medium transition-colors">
             Đăng ký ngay
           </Link>
         </p>

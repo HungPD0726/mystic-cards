@@ -15,8 +15,8 @@ export function Header() {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
   };
 
@@ -56,7 +56,7 @@ export function Header() {
             <div className="flex items-center gap-1 ml-2 pl-2 border-l border-border/50">
               <span className="flex items-center gap-1.5 px-2 py-1 text-sm text-purple-400">
                 <User className="h-4 w-4" />
-                <span className="hidden sm:inline">{user?.username}</span>
+                <span className="hidden sm:inline">{user?.email?.split('@')[0]}</span>
               </span>
               <button
                 onClick={handleLogout}
