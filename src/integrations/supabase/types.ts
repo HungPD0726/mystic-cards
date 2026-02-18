@@ -14,7 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      readings: {
+        Row: {
+          ai_interpretation: string | null
+          created_at: string
+          drawn_cards: Json
+          id: string
+          notes: string | null
+          spread_name: string
+          spread_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_interpretation?: string | null
+          created_at?: string
+          drawn_cards?: Json
+          id?: string
+          notes?: string | null
+          spread_name: string
+          spread_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_interpretation?: string | null
+          created_at?: string
+          drawn_cards?: Json
+          id?: string
+          notes?: string | null
+          spread_name?: string
+          spread_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,54 +1,37 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 const Register = () => {
   const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      toast({
-        title: 'Lỗi',
-        description: 'Mật khẩu xác nhận không khớp.',
-        variant: 'destructive',
-      });
+      toast.error('Mật khẩu xác nhận không khớp.');
       return;
     }
 
     if (password.length < 6) {
-      toast({
-        title: 'Lỗi',
-        description: 'Mật khẩu phải có ít nhất 6 ký tự.',
-        variant: 'destructive',
-      });
+      toast.error('Mật khẩu phải có ít nhất 6 ký tự.');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      await register(email, username, password);
-      toast({
-        title: 'Đăng ký thành công! 🎉',
-        description: 'Chào mừng bạn đến với Mystic Cards.',
-      });
+      await register(email, password);
+      toast.success('Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản 🎉');
       navigate('/');
     } catch (error: any) {
-      toast({
-        title: 'Đăng ký thất bại',
-        description: error.message || 'Đã xảy ra lỗi, vui lòng thử lại.',
-        variant: 'destructive',
-      });
+      toast.error(error.message || 'Đã xảy ra lỗi, vui lòng thử lại.');
     } finally {
       setIsLoading(false);
     }
@@ -58,7 +41,7 @@ const Register = () => {
     <div className="min-h-[80vh] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold text-gold" style={{ fontFamily: 'Cinzel, serif' }}>
             🌟 Đăng Ký
           </h1>
           <p className="text-muted-foreground mt-2">
@@ -78,22 +61,6 @@ const Register = () => {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="email@example.com"
-              className="w-full px-4 py-3 rounded-lg bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="username" className="text-sm font-medium text-foreground">
-              Tên hiển thị
-            </label>
-            <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              minLength={3}
-              placeholder="mystic_reader"
               className="w-full px-4 py-3 rounded-lg bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
             />
           </div>
@@ -140,10 +107,7 @@ const Register = () => {
 
         <p className="text-center text-muted-foreground mt-6">
           Đã có tài khoản?{' '}
-          <Link
-            to="/login"
-            className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
-          >
+          <Link to="/login" className="text-gold hover:text-gold/80 font-medium transition-colors">
             Đăng nhập
           </Link>
         </p>

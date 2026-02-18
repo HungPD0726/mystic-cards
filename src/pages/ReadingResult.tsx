@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { saveReadingHistory } from '@/hooks/useTarotReading';
 import { ReadingHistory, Orientation } from '@/data/types';
-import { Save, Share2, RotateCcw } from 'lucide-react';
+import { Save, Share2, RotateCcw, Sparkles, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface StoredCard {
   cardId: number;
@@ -31,7 +32,11 @@ interface StoredReading {
 const ReadingResult = () => {
   const { spread: spreadId } = useParams<{ spread: string }>();
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
   const [reading, setReading] = useState<StoredReading | null>(null);
+  const [aiInterpretation, setAiInterpretation] = useState<string>('');
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     const data = sessionStorage.getItem('tarot-current-reading');
@@ -39,6 +44,89 @@ const ReadingResult = () => {
       setReading(JSON.parse(data));
     }
   }, []);
+
+  const generateAIInterpretation = useCallback(async (readingData: StoredReading) => {
+    setIsLoadingAI(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('tarot-interpret', {
+        body: {
+          drawnCards: readingData.drawnCards,
+          spreadName: readingData.spreadName,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) {
+        if (data.error.includes('429') || data.error.includes('nhiều yêu cầu')) {
+          toast.error('Quá nhiều yêu cầu AI. Vui lòng thử lại sau ít phút.');
+        } else if (data.error.includes('402') || data.error.includes('credits')) {
+          toast.error('Cần nạp thêm credits để dùng AI.');
+        } else {
+          toast.error('Không thể tạo luận giải AI: ' + data.error);
+        }
+        return;
+      }
+
+      setAiInterpretation(data?.interpretation || '');
+    } catch (err: any) {
+      console.error('AI interpretation error:', err);
+      toast.error('Không thể kết nối AI. Vui lòng thử lại.');
+    } finally {
+      setIsLoadingAI(false);
+    }
+  }, []);
+
+  const handleSave = async () => {
+    if (!reading) return;
+
+    if (isAuthenticated && user) {
+      // Save to database
+      try {
+        const { error } = await supabase.from('readings').insert({
+          user_id: user.id,
+          spread_type: reading.spreadType,
+          spread_name: reading.spreadName,
+          drawn_cards: reading.drawnCards as any,
+          ai_interpretation: aiInterpretation || null,
+        });
+        if (error) throw error;
+        setIsSaved(true);
+        toast.success('Đã lưu lịch sử xem bói vào tài khoản!');
+      } catch (err) {
+        console.error(err);
+        toast.error('Lỗi khi lưu. Vui lòng thử lại.');
+      }
+    } else {
+      // Fallback: save to localStorage
+      const history: ReadingHistory[] = JSON.parse(localStorage.getItem('tarot-reading-history') || '[]');
+      const historyItem: ReadingHistory = {
+        id: Date.now().toString(),
+        date: new Date().toISOString(),
+        spreadType: reading.spreadType as ReadingHistory['spreadType'],
+        spreadName: reading.spreadName,
+        drawnCards: reading.drawnCards.map(dc => ({
+          cardId: dc.cardId,
+          cardName: dc.cardName,
+          orientation: dc.orientation,
+          position: dc.position,
+        })),
+      };
+      history.unshift(historyItem);
+      if (history.length > 50) history.pop();
+      localStorage.setItem('tarot-reading-history', JSON.stringify(history));
+      setIsSaved(true);
+      toast.success('Đã lưu lịch sử! Đăng nhập để đồng bộ lên cloud ☁️');
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast.success('Đã copy link!');
+    } catch {
+      toast.error('Không thể copy link');
+    }
+  };
 
   if (!reading) {
     return (
@@ -50,42 +138,6 @@ const ReadingResult = () => {
       </div>
     );
   }
-
-  const handleSave = () => {
-    const historyItem: ReadingHistory = {
-      id: Date.now().toString(),
-      date: new Date().toISOString(),
-      spreadType: reading.spreadType as ReadingHistory['spreadType'],
-      spreadName: reading.spreadName,
-      drawnCards: reading.drawnCards.map(dc => ({
-        cardId: dc.cardId,
-        cardName: dc.cardName,
-        orientation: dc.orientation,
-        position: dc.position,
-      })),
-    };
-    saveReadingHistory(historyItem);
-    toast.success('Đã lưu lịch sử xem bói!');
-  };
-
-  const handleShare = async () => {
-    const url = window.location.href;
-    try {
-      await navigator.clipboard.writeText(url);
-      toast.success('Đã copy link!');
-    } catch {
-      toast.error('Không thể copy link');
-    }
-  };
-
-  const generateSummary = () => {
-    return reading.drawnCards
-      .map(dc => {
-        const meaning = dc.orientation === 'upright' ? dc.uprightMeaning : dc.reversedMeaning;
-        return `**${dc.position}** (${dc.cardName}${dc.orientation === 'reversed' ? ' – Ngược' : ''}): ${meaning}`;
-      })
-      .join('\n\n');
-  };
 
   return (
     <div className="container mx-auto min-h-screen px-4 py-8">
@@ -133,6 +185,58 @@ const ReadingResult = () => {
         ))}
       </div>
 
+      {/* AI Interpretation */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="mx-auto max-w-2xl mb-6"
+      >
+        <Card className="border-purple-500/30 bg-card">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gold flex items-center gap-2" style={{ fontFamily: 'Cinzel, serif' }}>
+                <Sparkles className="h-5 w-5" />
+                🤖 Luận giải bằng AI
+              </h2>
+              {!aiInterpretation && !isLoadingAI && (
+                <Button
+                  size="sm"
+                  onClick={() => generateAIInterpretation(reading)}
+                  className="glow-gold gap-2"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Tạo luận giải
+                </Button>
+              )}
+            </div>
+
+            {isLoadingAI && (
+              <div className="flex items-center gap-3 text-muted-foreground py-4">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span className="text-sm">AI đang luận giải bài Tarot của bạn...</span>
+              </div>
+            )}
+
+            {aiInterpretation && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap"
+              >
+                {aiInterpretation}
+              </motion.div>
+            )}
+
+            {!aiInterpretation && !isLoadingAI && (
+              <p className="text-sm text-muted-foreground">
+                Nhấn "Tạo luận giải" để AI phân tích và đưa ra thông điệp sâu sắc từ trải bài của bạn.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+
       {/* Summary */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -171,9 +275,9 @@ const ReadingResult = () => {
         transition={{ delay: 0.5 }}
         className="mt-8 flex flex-wrap justify-center gap-3"
       >
-        <Button onClick={handleSave} className="gap-2 glow-gold">
+        <Button onClick={handleSave} disabled={isSaved} className="gap-2 glow-gold">
           <Save className="h-4 w-4" />
-          Lưu lịch sử
+          {isSaved ? 'Đã lưu ✓' : 'Lưu lịch sử'}
         </Button>
         <Button onClick={handleShare} variant="outline" className="gap-2 border-gold/30 text-gold hover:bg-secondary">
           <Share2 className="h-4 w-4" />
@@ -186,6 +290,21 @@ const ReadingResult = () => {
           </Button>
         </Link>
       </motion.div>
+
+      {!isAuthenticated && (
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="text-center text-sm text-muted-foreground mt-4"
+        >
+          💡{' '}
+          <Link to="/login" className="text-gold hover:underline">
+            Đăng nhập
+          </Link>{' '}
+          để lưu lịch sử lên cloud và sử dụng AI luận giải đầy đủ
+        </motion.p>
+      )}
     </div>
   );
 };
