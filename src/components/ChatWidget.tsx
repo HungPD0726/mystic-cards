@@ -1,12 +1,23 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Sparkles, User, Bot, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   role: 'user' | 'model';
   text: string;
 }
+
+interface ChatApiMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+const STORAGE_KEY = 'mystic_chat_history';
+const INITIAL_MESSAGE: Message = {
+  role: 'model',
+  text: 'Xin chao. Toi la tro ly Tarot cua ban. Hay hoi toi bat cu dieu gi ve Tarot, tam linh, hoac cuoc song.',
+};
 
 const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,36 +26,46 @@ const ChatWidget = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load chat from session storage
   useEffect(() => {
     try {
-      const savedChat = sessionStorage.getItem('mystic_chat_history');
-      if (savedChat) {
-        setMessages(JSON.parse(savedChat));
+      const savedChat = sessionStorage.getItem(STORAGE_KEY);
+      if (!savedChat) {
+        setMessages([INITIAL_MESSAGE]);
+        return;
+      }
+
+      const parsed = JSON.parse(savedChat);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        setMessages(parsed);
       } else {
-        setMessages([{ role: 'model', text: '✨ Xin chào! Tôi là trợ lý Tarot huyền bí. Hãy hỏi tôi bất cứ điều gì về Tarot, tâm linh hay cuộc sống nhé!' }]);
+        setMessages([INITIAL_MESSAGE]);
       }
     } catch {
-      setMessages([{ role: 'model', text: '✨ Xin chào! Tôi là trợ lý Tarot huyền bí. Hãy hỏi tôi bất cứ điều gì về Tarot, tâm linh hay cuộc sống nhé!' }]);
+      setMessages([INITIAL_MESSAGE]);
     }
   }, []);
 
-  // Save chat to session storage
   useEffect(() => {
     if (messages.length > 0) {
-      sessionStorage.setItem('mystic_chat_history', JSON.stringify(messages));
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
     }
   }, [messages]);
 
-  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading, isOpen]);
 
   const handleClearChat = () => {
-    const resetMsg: Message[] = [{ role: 'model', text: '✨ Xin chào! Tôi là trợ lý Tarot huyền bí. Hãy hỏi tôi bất cứ điều gì về Tarot, tâm linh hay cuộc sống nhé!' }];
-    setMessages(resetMsg);
-    sessionStorage.setItem('mystic_chat_history', JSON.stringify(resetMsg));
+    const resetMessages: Message[] = [INITIAL_MESSAGE];
+    setMessages(resetMessages);
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(resetMessages));
+  };
+
+  const toChatApiHistory = (chatMessages: Message[]): ChatApiMessage[] => {
+    return chatMessages.slice(-20).map((message) => ({
+      role: message.role === 'model' ? 'assistant' : 'user',
+      content: message.text,
+    }));
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -53,35 +74,42 @@ const ChatWidget = () => {
 
     const userMsg = inputValue.trim();
     setInputValue('');
-    const newMessages = [...messages, { role: 'user' as const, text: userMsg }];
-    setMessages(newMessages);
+
+    const nextMessages = [...messages, { role: 'user' as const, text: userMsg }];
+    setMessages(nextMessages);
     setIsLoading(true);
 
     try {
-      const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
-      if (!apiKey) throw new Error('API Key missing');
-
-      const genAI = new GoogleGenerativeAI(apiKey);
-
-      const systemPrompt = 'Bạn là một người hướng dẫn Tarot huyền bí, khôn ngoan và nhân hậu. Hãy trả lời các câu hỏi về tâm linh, ý nghĩa lá bài Tarot và cuộc sống. Hãy ngắn gọn nhưng sâu sắc. Trả lời bằng tiếng Việt.';
-
-      const model = genAI.getGenerativeModel({
-        model: 'gemini-2.0-flash',
-        systemInstruction: systemPrompt,
+      const { data, error } = await supabase.functions.invoke('tarot-interpret', {
+        body: {
+          mode: 'chat',
+          messages: toChatApiHistory(nextMessages),
+        },
       });
 
-      const historyMessages = newMessages.slice(0, -1).map(m => ({
-        role: m.role,
-        parts: [{ text: m.text }],
-      }));
+      if (error) {
+        throw new Error(error.message || 'Khong the ket noi AI.');
+      }
 
-      const chat = model.startChat({ history: historyMessages });
-      const result = await chat.sendMessage(userMsg);
-      const aiText = result.response.text() || '';
-      setMessages(prev => [...prev, { role: 'model', text: aiText }]);
-    } catch (error) {
-      console.error('Chat error:', error);
-      setMessages(prev => [...prev, { role: 'model', text: '⚠️ Có lỗi xảy ra. Vui lòng thử lại sau.' }]);
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      const reply =
+        typeof data?.reply === 'string' && data.reply.trim()
+          ? data.reply.trim()
+          : 'Toi chua the phan hoi luc nay. Vui long thu lai sau.';
+
+      setMessages((prev) => [...prev, { role: 'model', text: reply }]);
+    } catch (err) {
+      console.error('Chat error:', err);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'model',
+          text: 'Co loi xay ra khi ket noi AI. Vui long thu lai sau.',
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -89,7 +117,6 @@ const ChatWidget = () => {
 
   return (
     <>
-      {/* Floating Toggle Button */}
       <motion.button
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
@@ -101,7 +128,6 @@ const ChatWidget = () => {
         {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
       </motion.button>
 
-      {/* Chat Window */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -111,37 +137,42 @@ const ChatWidget = () => {
             transition={{ duration: 0.2 }}
             className="fixed bottom-24 right-4 md:right-6 z-50 w-[90vw] md:w-[400px] h-[500px] max-h-[70vh] flex flex-col bg-background border border-border rounded-2xl shadow-2xl overflow-hidden"
           >
-            {/* Header */}
             <div className="p-4 bg-gradient-to-r from-purple-600 to-indigo-700 text-white flex items-center justify-between shadow-md">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-white/10 rounded-full">
                   <Sparkles className="w-5 h-5 animate-pulse" />
                 </div>
                 <div>
-                  <h3 className="font-bold tracking-wide" style={{ fontFamily: 'Cinzel, serif' }}>Mystic Guide</h3>
+                  <h3 className="font-bold tracking-wide" style={{ fontFamily: 'Cinzel, serif' }}>
+                    Mystic Guide
+                  </h3>
                   <div className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span className="text-[10px] opacity-80 uppercase tracking-widest font-semibold">Online</span>
+                    <span className="text-[10px] opacity-80 uppercase tracking-widest font-semibold">
+                      Online
+                    </span>
                   </div>
                 </div>
               </div>
-              <button onClick={handleClearChat} className="text-white/70 hover:text-white transition-colors p-1" title="Xóa cuộc hội thoại">
+              <button
+                onClick={handleClearChat}
+                className="text-white/70 hover:text-white transition-colors p-1"
+                title="Xoa cuoc hoi thoai"
+              >
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-card/50 scroll-smooth">
               {messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={`flex items-start gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
-                >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    msg.role === 'user'
-                      ? 'bg-secondary text-muted-foreground'
-                      : 'bg-purple-500/20 text-purple-400'
-                  }`}>
+                <div key={idx} className={`flex items-start gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      msg.role === 'user'
+                        ? 'bg-secondary text-muted-foreground'
+                        : 'bg-purple-500/20 text-purple-400'
+                    }`}
+                  >
                     {msg.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                   </div>
                   <div
@@ -165,21 +196,21 @@ const ChatWidget = () => {
                     <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
                     <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
                     <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce"></span>
-                    <span className="text-xs text-muted-foreground ml-2 italic">Đang suy nghĩ...</span>
+                    <span className="text-xs text-muted-foreground ml-2 italic">Dang suy nghi...</span>
                   </div>
                 </div>
               )}
+
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area */}
             <form onSubmit={handleSendMessage} className="p-3 border-t border-border bg-background">
               <div className="relative flex items-center">
                 <input
                   type="text"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="Hỏi về Tarot, tâm linh..."
+                  placeholder="Hoi ve Tarot, tam linh..."
                   disabled={isLoading}
                   className="w-full pl-4 pr-12 py-3 rounded-xl bg-card border-transparent focus:bg-background border focus:border-purple-500 focus:ring-0 outline-none transition-all text-sm text-foreground placeholder:text-muted-foreground"
                 />
