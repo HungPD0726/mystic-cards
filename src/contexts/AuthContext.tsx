@@ -8,7 +8,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string) => Promise<{ emailConfirmationRequired: boolean }>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -21,6 +21,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   const isAuthenticated = !!user && !!session;
+
+  const mapAuthError = (message: string) => {
+    const msg = message.toLowerCase();
+
+    if (msg.includes('invalid login credentials')) {
+      return 'Email hoac mat khau khong dung.';
+    }
+
+    if (msg.includes('email not confirmed')) {
+      return 'Tai khoan chua xac nhan email. Vui long kiem tra hop thu.';
+    }
+
+    if (msg.includes('user already registered')) {
+      return 'Email nay da dang ky.';
+    }
+
+    if (msg.includes('password should be at least')) {
+      return 'Mat khau phai co it nhat 6 ky tu.';
+    }
+
+    return message;
+  };
 
   useEffect(() => {
     // Set up auth state listener BEFORE getting session
@@ -42,16 +64,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw new Error(error.message);
+    if (error) throw new Error(mapAuthError(error.message));
   }, []);
 
   const register = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: window.location.origin },
     });
-    if (error) throw new Error(error.message);
+    if (error) throw new Error(mapAuthError(error.message));
+
+    return { emailConfirmationRequired: !data.session };
   }, []);
 
   const loginWithGoogle = useCallback(async () => {
@@ -59,7 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       provider: 'google',
       options: { redirectTo: window.location.origin },
     });
-    if (error) throw new Error(error.message);
+    if (error) throw new Error(mapAuthError(error.message));
   }, []);
 
   const logout = useCallback(async () => {

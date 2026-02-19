@@ -20,67 +20,85 @@ export function Header() {
     navigate('/');
   };
 
-  return (
-    <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link to="/" className="flex items-center gap-2">
-          <span className="text-2xl">🔮</span>
-          <span className="font-cinzel text-lg font-bold text-gold" style={{ fontFamily: 'Cinzel, serif' }}>
-            Mystic Tarot
-          </span>
-        </Link>
+  const displayName = (user?.user_metadata?.display_name as string) || user?.email?.split('@')[0] || 'Người dùng';
 
-        <nav className="flex items-center gap-1">
-          {navItems.map(item => {
-            const isActive = location.pathname === item.to || 
-              (item.to !== '/' && location.pathname.startsWith(item.to));
-            return (
+  return (
+    <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-xl">
+      <div className="container mx-auto h-16 px-4">
+        <div className="flex h-full items-center justify-between gap-3">
+          <Link to="/" className="group flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full border border-gold/40 bg-gradient-to-br from-amber-300/30 to-purple-500/25 shadow-[0_0_20px_hsl(var(--gold)/0.18)]">
+              <span className="text-base">🔮</span>
+            </div>
+            <div className="leading-tight">
+              <p className="text-sm text-gold/80 tracking-[0.2em] uppercase">Mystic</p>
+              <p
+                className="text-base font-semibold text-foreground transition-colors group-hover:text-gold"
+                style={{ fontFamily: 'Cinzel, serif' }}
+              >
+                Tarot Cards
+              </p>
+            </div>
+          </Link>
+
+          <nav className="flex items-center gap-1 rounded-full border border-border/70 bg-card/70 px-1.5 py-1">
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.to || (item.to !== '/' && location.pathname.startsWith(item.to));
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={cn(
+                    'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors',
+                    isActive
+                      ? 'bg-secondary text-gold'
+                      : 'text-muted-foreground hover:bg-secondary/40 hover:text-foreground',
+                  )}
+                >
+                  <item.icon className="h-4 w-4" />
+                  <span className="hidden md:inline">{item.label}</span>
+                </Link>
+              );
+            })}
+
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to="/profile"
+                  className={cn(
+                    'ml-1 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors',
+                    location.pathname === '/profile'
+                      ? 'bg-secondary text-gold'
+                      : 'text-muted-foreground hover:bg-secondary/40 hover:text-foreground',
+                  )}
+                >
+                  <User className="h-4 w-4" />
+                  <span className="hidden lg:inline max-w-[120px] truncate">{displayName}</span>
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary/40 hover:text-foreground"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden lg:inline">Đăng xuất</span>
+                </button>
+              </>
+            ) : (
               <Link
-                key={item.to}
-                to={item.to}
+                to="/login"
                 className={cn(
-                  'flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm transition-colors',
-                  isActive
+                  'ml-1 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors',
+                  location.pathname === '/login' || location.pathname === '/register'
                     ? 'bg-secondary text-gold'
-                    : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
+                    : 'text-muted-foreground hover:bg-secondary/40 hover:text-foreground',
                 )}
               >
-                <item.icon className="h-4 w-4" />
-                <span className="hidden sm:inline">{item.label}</span>
+                <LogIn className="h-4 w-4" />
+                <span className="hidden lg:inline">Đăng nhập</span>
               </Link>
-            );
-          })}
-
-          {/* Auth buttons */}
-          {isAuthenticated ? (
-            <div className="flex items-center gap-1 ml-2 pl-2 border-l border-border/50">
-              <span className="flex items-center gap-1.5 px-2 py-1 text-sm text-purple-400">
-                <User className="h-4 w-4" />
-                <span className="hidden sm:inline">{user?.email?.split('@')[0]}</span>
-              </span>
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Đăng xuất</span>
-              </button>
-            </div>
-          ) : (
-            <Link
-              to="/login"
-              className={cn(
-                'flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm transition-colors ml-2 pl-2 border-l border-border/50',
-                location.pathname === '/login' || location.pathname === '/register'
-                  ? 'bg-secondary text-gold'
-                  : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
-              )}
-            >
-              <LogIn className="h-4 w-4" />
-              <span className="hidden sm:inline">Đăng nhập</span>
-            </Link>
-          )}
-        </nav>
+            )}
+          </nav>
+        </div>
       </div>
     </header>
   );
