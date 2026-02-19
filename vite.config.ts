@@ -4,7 +4,12 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode }) => {
+  const isGithubPages = process.env.GITHUB_ACTIONS === "true";
+  const base = process.env.VITE_BASE_PATH ?? (isGithubPages ? "/mystic-cards/" : "/");
+
+  return {
+    base,
   server: {
     host: "::",
     port: 8080,
@@ -27,4 +32,5 @@ export default defineConfig(({ mode }) => ({
       process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNnd2Z0dWJjZ3lhd2Rqemx5Z21vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MTQ1MDksImV4cCI6MjA4Njk5MDUwOX0.VL8svX4KKKEX4jDSgjogYvYfCT9YEQlqvXkNFaVwuiY'
     ),
   },
-}));
+  };
+});
