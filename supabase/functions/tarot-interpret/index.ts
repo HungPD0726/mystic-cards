@@ -26,23 +26,16 @@ serve(async (req) => {
       )
       .join("\n\n");
 
-    const prompt = `Bạn là một chuyên gia đọc bài Tarot với nhiều năm kinh nghiệm, am hiểu sâu sắc về hệ thống Rider-Waite Tarot và văn hóa phương Đông. Bạn diễn giải bài Tarot bằng tiếng Việt với văn phong huyền bí, ấm áp và đầy cảm hứng.
+    const systemPrompt = `Bạn là một chuyên gia đọc bài Tarot với nhiều năm kinh nghiệm, am hiểu sâu sắc về hệ thống Rider-Waite Tarot và văn hóa phương Đông. Bạn diễn giải bài Tarot bằng tiếng Việt với văn phong huyền bí, ấm áp và đầy cảm hứng. Luận giải của bạn ngắn gọn (3-4 đoạn), sâu sắc và thực tế.`;
 
-Hãy luận giải trải bài Tarot "${spreadName}" với các lá bài sau:
+    const userPrompt = `Hãy luận giải trải bài Tarot "${spreadName}" với các lá bài sau:\n\n${cardDescriptions}\n\nVui lòng:\n1. Phân tích tổng thể năng lượng của trải bài\n2. Diễn giải ý nghĩa từng lá bài theo vị trí\n3. Đưa ra thông điệp tổng hợp và lời khuyên thiết thực\n\nViết bằng tiếng Việt, văn phong huyền bí nhưng dễ hiểu, khoảng 200-300 từ.`;
 
-${cardDescriptions}
-
-Vui lòng:
-1. Phân tích tổng thể năng lượng của trải bài
-2. Diễn giải ý nghĩa từng lá bài theo vị trí
-3. Đưa ra thông điệp tổng hợp và lời khuyên thiết thực
-
-Viết bằng tiếng Việt, văn phong huyền bí nhưng dễ hiểu, khoảng 200-300 từ.`;
-
-    // Use Lovable AI Gateway
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    
-    const response = await fetch("https://api.lovable.dev/v1/ai/chat/completions", {
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
+    }
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -51,7 +44,8 @@ Viết bằng tiếng Việt, văn phong huyền bí nhưng dễ hiểu, khoản
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "user", content: prompt },
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
         ],
         max_tokens: 1024,
         temperature: 0.8,
@@ -61,7 +55,19 @@ Viết bằng tiếng Việt, văn phong huyền bí nhưng dễ hiểu, khoản
     if (!response.ok) {
       const text = await response.text();
       console.error("AI Gateway error:", response.status, text);
-      throw new Error(`AI Gateway error: ${response.status} ${text}`);
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Quá nhiều yêu cầu, vui lòng thử lại sau." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "Hết lượt AI, vui lòng nạp thêm credits." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      throw new Error(`AI Gateway error: ${response.status}`);
     }
 
     const data = await response.json();
