@@ -52,8 +52,9 @@ const Login = () => {
         toast.success('Đăng ký thành công.');
         navigate('/');
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Xác thực thất bại.');
+    } catch (err: Error | unknown) {
+      const message = err instanceof Error ? err.message : 'Xác thực thất bại.';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -63,8 +64,9 @@ const Login = () => {
     setGoogleLoading(true);
     try {
       await loginWithGoogle();
-    } catch (err: any) {
-      toast.error(err?.message || 'Đăng nhập Google thất bại.');
+    } catch (err: Error | unknown) {
+      const message = err instanceof Error ? err.message : 'Đăng nhập Google thất bại.';
+      toast.error(message);
     } finally {
       setGoogleLoading(false);
     }
