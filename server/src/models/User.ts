@@ -1,6 +1,8 @@
 import { Table, Column, Model, DataType, HasMany, BeforeCreate, BeforeUpdate } from 'sequelize-typescript';
 import bcrypt from 'bcrypt';
 import Reading from './Reading';
+import AIInterpretation from './AIInterpretation';
+import Favorite from './Favorite';
 
 @Table({
   tableName: 'users',
@@ -49,6 +51,12 @@ export default class User extends Model {
 
   @HasMany(() => Reading)
   readings!: Reading[];
+
+  @HasMany(() => AIInterpretation, { onDelete: 'NO ACTION' })
+  aiInterpretations!: AIInterpretation[];
+
+  @HasMany(() => Favorite)
+  favorites!: Favorite[];
 
   // Hash password before creating user
   @BeforeCreate

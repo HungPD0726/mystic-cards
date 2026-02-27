@@ -1,4 +1,5 @@
-import { Table, Column, Model, DataType } from 'sequelize-typescript';
+import { Table, Column, Model, DataType, HasMany } from 'sequelize-typescript';
+import Favorite from './Favorite';
 
 @Table({
   tableName: 'cards',
@@ -66,4 +67,7 @@ export default class Card extends Model {
     allowNull: false,
   })
   group!: string;
+
+  @HasMany(() => Favorite)
+  favorites!: Favorite[];
 }

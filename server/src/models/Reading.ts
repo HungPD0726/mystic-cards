@@ -1,5 +1,7 @@
-import { Table, Column, Model, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
+import { Table, Column, Model, DataType, ForeignKey, BelongsTo, HasOne } from 'sequelize-typescript';
 import User from './User';
+import Spread from './Spread';
+import AIInterpretation from './AIInterpretation';
 
 @Table({
   tableName: 'readings',
@@ -22,6 +24,16 @@ export default class Reading extends Model {
 
   @BelongsTo(() => User)
   user!: User;
+
+  @ForeignKey(() => Spread)
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true, // Allow null if using custom spreads or simple draws
+  })
+  spreadId?: number;
+
+  @BelongsTo(() => Spread)
+  spread?: Spread;
 
   @Column({
     type: DataType.STRING,
@@ -53,4 +65,7 @@ export default class Reading extends Model {
     allowNull: true,
   })
   notes?: string;
+
+  @HasOne(() => AIInterpretation)
+  aiInterpretation!: AIInterpretation;
 }

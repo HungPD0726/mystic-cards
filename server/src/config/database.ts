@@ -1,8 +1,6 @@
 import { Sequelize } from 'sequelize-typescript';
 import dotenv from 'dotenv';
-import User from '../models/User';
-import Reading from '../models/Reading';
-import Card from '../models/Card';
+import { User, Reading, Card, Spread, AIInterpretation, Favorite } from '../models';
 
 dotenv.config();
 
@@ -13,7 +11,7 @@ const sequelize = new Sequelize({
   database: process.env.DB_NAME || 'mystic_cards',
   username: process.env.DB_USER || 'sa',
   password: process.env.DB_PASSWORD || '',
-  models: [User, Reading, Card],
+  models: [User, Card, Spread, Reading, AIInterpretation, Favorite],
   dialectOptions: {
     options: {
       encrypt: false,

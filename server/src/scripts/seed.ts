@@ -1,5 +1,5 @@
 import sequelize, { connectDatabase } from '../config/database';
-import { Card } from '../models';
+import { Card, User, Reading, Spread } from '../models';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -104,13 +104,63 @@ const seedDatabase = async () => {
     // Connect to database
     await connectDatabase();
 
-    // Clear existing cards
-    await Card.destroy({ where: {}, truncate: true });
-    console.log('🗑️  Cleared existing cards');
+    // Clear existing data
+    await Reading.destroy({ where: {} });
+    await User.destroy({ where: {} });
+    await Card.destroy({ where: {} });
+    await Spread.destroy({ where: {} });
+    console.log('🗑️  Cleared existing data');
+
+    // Insert Spreads
+    const spreads = [
+      {
+        name: 'Một lá',
+        description: 'Câu trả lời nhanh cho một câu hỏi cụ thể hoặc thông điệp trong ngày.',
+        numberOfCards: 1,
+        spreadType: 'single',
+      },
+      {
+        name: 'Quá khứ - Hiện tại - Tương lai',
+        description: 'Cung cấp cái nhìn tổng quan về hành trình của bạn qua thời gian.',
+        numberOfCards: 3,
+        spreadType: 'timeline',
+      },
+      {
+        name: 'Celtic Cross',
+        description: 'Kiểu trải bài cổ điển và chi tiết nhất để phân tích sâu một vấn đề.',
+        numberOfCards: 10,
+        spreadType: 'complex',
+      }
+    ];
+    const createdSpreads = await Spread.bulkCreate(spreads);
+    console.log('✅ Successfully seeded spreads!');
 
     // Insert all cards
     await Card.bulkCreate(allCards as any[]);
     console.log(`✅ Successfully seeded ${allCards.length} tarot cards!`);
+
+    // Create a sample user
+    const user = await User.create({
+      email: 'test@example.com',
+      username: 'testuser',
+      password: 'password123', // This will be hashed by BeforeCreate hook
+    });
+    console.log(`✅ Seeded user with id ${user.id}`);
+
+    // Create a sample reading
+    const reading = await Reading.create({
+      userId: user.id,
+      spreadId: createdSpreads[1].id, // 3 cards
+      spreadType: 'timeline',
+      spreadName: 'Quá khứ - Hiện tại - Tương lai',
+      drawnCards: [
+        { ...allCards[0], isUpright: true },
+        { ...allCards[1], isUpright: false },
+        { ...allCards[2], isUpright: true },
+      ],
+      notes: 'Sample reading for testing',
+    });
+    console.log(`✅ Seeded sample reading with id ${reading.id}`);
 
     process.exit(0);
   } catch (error) {
