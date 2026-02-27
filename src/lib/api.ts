@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 interface ApiOptions {
   method?: string;
@@ -57,6 +57,20 @@ class ApiClient {
     return this.request<{ token: string; user: any }>('/auth/login', {
       method: 'POST',
       body: { email, password },
+    });
+  }
+
+  async googleSync(data: { email: string; supabaseId: string; username?: string }) {
+    return this.request<{ token: string; user: any }>('/auth/google-sync', {
+      method: 'POST',
+      body: data,
+    });
+  }
+
+  async googleLogin(data: { accessToken: string; username?: string }) {
+    return this.request<{ token: string; user: any }>('/auth/google-login', {
+      method: 'POST',
+      body: data,
     });
   }
 

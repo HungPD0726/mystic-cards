@@ -1,12 +1,13 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
   const isGithubPages = process.env.GITHUB_ACTIONS === "true";
-  const base = process.env.VITE_BASE_PATH ?? (isGithubPages ? "/mystic-cards/" : "/");
+  const base = env.VITE_BASE_PATH ?? (isGithubPages ? "/mystic-cards/" : "/");
 
   return {
     base,
@@ -24,13 +25,9 @@ export default defineConfig(({ mode }) => {
     },
   },
   define: {
-    // Fallback values so the app doesn't crash if env vars aren't injected
-    'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(
-      process.env.VITE_SUPABASE_URL || 'https://cgwftubcgyawdjzlygmo.supabase.co'
-    ),
-    'import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY': JSON.stringify(
-      process.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNnd2Z0dWJjZ3lhd2Rqemx5Z21vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MTQ1MDksImV4cCI6MjA4Njk5MDUwOX0.VL8svX4KKKEX4jDSgjogYvYfCT9YEQlqvXkNFaVwuiY'
-    ),
+    "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(env.VITE_SUPABASE_URL),
+    "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(env.VITE_SUPABASE_PUBLISHABLE_KEY),
+    "import.meta.env.VITE_API_BASE_URL": JSON.stringify(env.VITE_API_BASE_URL),
   },
   };
 });

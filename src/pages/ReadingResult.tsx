@@ -9,7 +9,7 @@ import { ReadingHistory, Orientation } from '@/data/types';
 import { Save, Share2, RotateCcw, Sparkles, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { generateTarotInterpretation } from '@/lib/geminiService';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/features/auth/context/AuthContext';
 
 interface StoredCard {
   cardId: number;
@@ -304,3 +304,4 @@ const ReadingResult = () => {
 };
 
 export default ReadingResult;
+

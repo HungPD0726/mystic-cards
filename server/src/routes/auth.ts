@@ -26,6 +26,24 @@ router.post(
   authController.login
 );
 
+// Google/Supabase Sync
+router.post(
+  '/google-sync',
+  [
+    body('email').isEmail().withMessage('Please provide a valid email'),
+    body('supabaseId').notEmpty().withMessage('Supabase ID is required'),
+    body('username').optional().trim(),
+  ],
+  authController.googleSync
+);
+
+// Google Login (verify provider token on backend)
+router.post(
+  '/google-login',
+  [body('accessToken').notEmpty().withMessage('Google access token is required'), body('username').optional().trim()],
+  authController.googleLogin
+);
+
 // Get current user (protected)
 router.get('/me', authenticate, authController.getCurrentUser);
 

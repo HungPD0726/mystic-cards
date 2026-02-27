@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Sparkles, BookOpen, Home, History, LogIn, LogOut, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/features/auth/context/AuthContext';
 
 const navItems = [
   { to: '/', label: 'Trang chủ', icon: Home },
@@ -103,3 +103,4 @@ export function Header() {
     </header>
   );
 }
+
