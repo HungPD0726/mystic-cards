@@ -1,15 +1,15 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { ReadingHistory, Orientation } from '@/data/types';
-import { Save, Share2, RotateCcw, Sparkles, Loader2 } from 'lucide-react';
+import { Save, Share2, RotateCcw, Sparkles, Loader2, Stars, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { generateTarotInterpretation } from '@/lib/geminiService';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { cn } from '@/lib/utils';
 
 interface StoredCard {
   cardId: number;
@@ -32,7 +32,6 @@ interface StoredReading {
 
 const ReadingResult = () => {
   const { spread: spreadId } = useParams<{ spread: string }>();
-  const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const [reading, setReading] = useState<StoredReading | null>(null);
   const [aiInterpretation, setAiInterpretation] = useState<string>('');
@@ -42,10 +41,7 @@ const ReadingResult = () => {
   const generateAIInterpretation = useCallback(async (readingData: StoredReading) => {
     setIsLoadingAI(true);
     try {
-      const interpretation = await generateTarotInterpretation(
-        readingData.drawnCards,
-        readingData.spreadName
-      );
+      const interpretation = await generateTarotInterpretation(readingData.drawnCards, readingData.spreadName);
       setAiInterpretation(interpretation);
     } catch (err: any) {
       console.error('AI interpretation error:', err);
@@ -61,7 +57,6 @@ const ReadingResult = () => {
       const parsed = JSON.parse(data);
       setReading(parsed);
 
-      // Auto-trigger AI interpretation if flagged from ReadingDraw
       const autoAI = sessionStorage.getItem('tarot-auto-ai');
       if (autoAI) {
         sessionStorage.removeItem('tarot-auto-ai');
@@ -74,7 +69,6 @@ const ReadingResult = () => {
     if (!reading) return;
 
     if (isAuthenticated && user) {
-      // Save to database
       try {
         const { error } = await supabase.from('readings').insert({
           user_id: user.id,
@@ -91,14 +85,13 @@ const ReadingResult = () => {
         toast.error('Lỗi khi lưu. Vui lòng thử lại.');
       }
     } else {
-      // Fallback: save to localStorage
       const history: ReadingHistory[] = JSON.parse(localStorage.getItem('tarot-reading-history') || '[]');
       const historyItem: ReadingHistory = {
         id: Date.now().toString(),
         date: new Date().toISOString(),
         spreadType: reading.spreadType as ReadingHistory['spreadType'],
         spreadName: reading.spreadName,
-        drawnCards: reading.drawnCards.map(dc => ({
+        drawnCards: reading.drawnCards.map((dc) => ({
           cardId: dc.cardId,
           cardName: dc.cardName,
           orientation: dc.orientation,
@@ -133,175 +126,218 @@ const ReadingResult = () => {
     );
   }
 
-  return (
-    <div className="container mx-auto min-h-screen px-4 py-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-10"
-      >
-        <h1 className="text-3xl font-bold text-gold" style={{ fontFamily: 'Cinzel, serif' }}>
-          Kết quả trải bài
-        </h1>
-        <p className="mt-1 text-muted-foreground">{reading.spreadName}</p>
-      </motion.div>
+  const uprightCount = reading.drawnCards.filter((dc) => dc.orientation === 'upright').length;
+  const reversedCount = reading.drawnCards.length - uprightCount;
 
-      {/* Cards display */}
-      <div className="mx-auto mb-10 flex flex-col sm:flex-row items-center justify-center gap-6 max-w-4xl">
-        {reading.drawnCards.map((dc, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.15 }}
-            className="flex flex-col items-center gap-2"
-          >
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground" style={{ fontFamily: 'Cinzel, serif' }}>
-              {dc.position}
-            </span>
-            <div className={`w-32 h-52 sm:w-40 sm:h-64 rounded-xl border-2 border-gold/60 overflow-hidden bg-card flex flex-col items-center justify-center p-2 ${dc.orientation === 'reversed' ? 'rotate-180' : ''}`}>
-              <img
-                src={dc.imagePath}
-                alt={dc.cardName}
-                className="h-3/4 w-auto object-contain"
-                onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
-              />
-              <p className="mt-1 text-center text-xs font-semibold" style={{ fontFamily: 'Cinzel, serif' }}>
+  return (
+    <div className="relative min-h-screen overflow-x-clip">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(circle_at_center,hsl(var(--gold)/0.16),transparent_70%)]" />
+
+      <div className="container relative mx-auto px-4 py-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mx-auto mb-6 max-w-5xl rounded-3xl border border-border/60 bg-card/45 p-5 backdrop-blur md:p-7"
+        >
+          <div className="grid gap-5 md:grid-cols-[1.1fr_0.9fr] md:items-end">
+            <div>
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-gold/30 bg-card/50 px-4 py-1.5">
+                <Stars className="h-4 w-4 text-gold" />
+                <span className="text-xs uppercase tracking-[0.2em] text-gold/90">Reading Complete</span>
+              </div>
+              <h1 className="text-3xl font-bold text-gold md:text-4xl" style={{ fontFamily: 'Cinzel, serif' }}>
+                Kết quả trải bài
+              </h1>
+              <p className="mt-2 text-muted-foreground">{reading.spreadName}</p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-1">
+              <div className="rounded-xl border border-border/60 bg-background/45 px-4 py-3">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Số lá bài</p>
+                <p className="mt-1 text-sm font-semibold text-foreground">{reading.drawnCards.length} lá</p>
+              </div>
+              <div className="rounded-xl border border-border/60 bg-background/45 px-4 py-3">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Xuôi / Ngược</p>
+                <p className="mt-1 text-sm font-semibold text-gold">
+                  {uprightCount} / {reversedCount}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border/60 bg-background/45 px-4 py-3">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Trạng thái AI</p>
+                <p className="mt-1 text-sm font-semibold text-foreground">{aiInterpretation ? 'Đã có luận giải' : 'Chưa tạo luận giải'}</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.04 }}
+          className="mx-auto mb-6 grid max-w-5xl gap-4 sm:grid-cols-3"
+        >
+          {reading.drawnCards.map((dc, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.12 }}
+              className="group rounded-2xl border border-border/60 bg-card/55 p-3 transition-all duration-300 hover:-translate-y-1 hover:border-gold/40 hover:shadow-[0_14px_34px_hsl(var(--gold)/0.12)]"
+            >
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground" style={{ fontFamily: 'Cinzel, serif' }}>
+                  {dc.position}
+                </span>
+                <Badge variant={dc.orientation === 'reversed' ? 'destructive' : 'secondary'} className="text-[10px]">
+                  {dc.orientation === 'reversed' ? 'Ngược' : 'Xuôi'}
+                </Badge>
+              </div>
+
+              <div className="overflow-hidden rounded-xl border border-border/60 bg-background/45 p-2">
+                <img
+                  src={dc.imagePath}
+                  alt={dc.cardName}
+                  className={cn('h-52 w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]', dc.orientation === 'reversed' && 'rotate-180')}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/placeholder.svg';
+                  }}
+                />
+              </div>
+
+              <p className="mt-3 text-center text-sm font-semibold text-foreground" style={{ fontFamily: 'Cinzel, serif' }}>
                 {dc.cardName}
               </p>
-            </div>
-            <div className="flex items-center gap-1">
-              {dc.orientation === 'reversed' && (
-                <Badge variant="destructive" className="text-[10px]">Ngược</Badge>
-              )}
-            </div>
-          </motion.div>
-        ))}
-      </div>
+            </motion.div>
+          ))}
+        </motion.div>
 
-      {/* AI Interpretation */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="mx-auto max-w-2xl mb-6"
-      >
-        <Card className="border-purple-500/30 bg-card">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gold flex items-center gap-2" style={{ fontFamily: 'Cinzel, serif' }}>
-                <Sparkles className="h-5 w-5" />
-                🤖 Luận giải bằng AI
-              </h2>
-              {!aiInterpretation && !isLoadingAI && (
-                <Button
-                  size="sm"
-                  onClick={() => generateAIInterpretation(reading)}
-                  className="glow-gold gap-2"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  Tạo luận giải
-                </Button>
-              )}
-            </div>
-
-            {isLoadingAI && (
-              <div className="flex items-center gap-3 text-muted-foreground py-4">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <span className="text-sm">AI đang luận giải bài Tarot của bạn...</span>
-              </div>
-            )}
-
-            {aiInterpretation && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap"
-              >
-                {aiInterpretation}
-              </motion.div>
-            )}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12 }}
+          className="mx-auto mb-6 max-w-5xl rounded-3xl border border-purple-500/25 bg-card/50 p-5 md:p-6"
+        >
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-gold md:text-2xl" style={{ fontFamily: 'Cinzel, serif' }}>
+              <Sparkles className="h-5 w-5" />
+              🤖 Luận giải bằng AI
+            </h2>
 
             {!aiInterpretation && !isLoadingAI && (
-              <p className="text-sm text-muted-foreground">
-                Nhấn "Tạo luận giải" để AI phân tích và đưa ra thông điệp sâu sắc từ trải bài của bạn.
-              </p>
+              <Button size="sm" onClick={() => generateAIInterpretation(reading)} className="gap-2 glow-gold">
+                <Sparkles className="h-4 w-4" />
+                Tạo luận giải
+              </Button>
             )}
-          </CardContent>
-        </Card>
-      </motion.div>
+          </div>
 
-      {/* Summary */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="mx-auto max-w-2xl"
-      >
-        <Card className="border-gold/30 bg-card">
-          <CardContent className="p-6">
-            <h2 className="mb-4 text-xl font-bold text-gold" style={{ fontFamily: 'Cinzel, serif' }}>
-              ✨ Tóm tắt & Kết luận
-            </h2>
-            <div className="space-y-4 text-sm text-foreground/90">
-              {reading.drawnCards.map((dc, i) => (
-                <div key={i}>
-                  <h3 className="font-semibold text-gold/80" style={{ fontFamily: 'Cinzel, serif' }}>
-                    {dc.position} — {dc.cardName} {dc.orientation === 'reversed' ? '(Ngược)' : '(Xuôi)'}
-                  </h3>
-                  <div className="mt-1 flex flex-wrap gap-1 mb-1">
-                    {dc.keywords.map(kw => (
-                      <Badge key={kw} variant="secondary" className="text-[10px] border-gold/20">{kw}</Badge>
-                    ))}
-                  </div>
-                  <p>{dc.orientation === 'upright' ? dc.uprightMeaning : dc.reversedMeaning}</p>
-                </div>
-              ))}
+          {isLoadingAI && (
+            <div className="flex items-center gap-3 py-4 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span className="text-sm">AI đang phân tích tổng thể trải bài của bạn...</span>
             </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+          )}
 
-      {/* Actions */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="mt-8 flex flex-wrap justify-center gap-3"
-      >
-        <Button onClick={handleSave} disabled={isSaved} className="gap-2 glow-gold">
-          <Save className="h-4 w-4" />
-          {isSaved ? 'Đã lưu ✓' : 'Lưu lịch sử'}
-        </Button>
-        <Button onClick={handleShare} variant="outline" className="gap-2 border-gold/30 text-gold hover:bg-secondary">
-          <Share2 className="h-4 w-4" />
-          Chia sẻ link
-        </Button>
-        <Link to="/reading">
-          <Button variant="outline" className="gap-2 border-gold/30 text-gold hover:bg-secondary">
-            <RotateCcw className="h-4 w-4" />
-            Bói lại
-          </Button>
-        </Link>
-      </motion.div>
+          {aiInterpretation && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="rounded-2xl border border-border/60 bg-background/45 p-4 text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap"
+            >
+              {aiInterpretation}
+            </motion.div>
+          )}
 
-      {!isAuthenticated && (
-        <motion.p
+          {!aiInterpretation && !isLoadingAI && (
+            <p className="rounded-2xl border border-border/60 bg-background/45 p-4 text-sm text-muted-foreground">
+              Nhấn "Tạo luận giải" để AI phân tích sâu hơn về mạch năng lượng, thông điệp chính và hướng hành động từ trải bài này.
+            </p>
+          )}
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.18 }}
+          className="mx-auto max-w-5xl rounded-3xl border border-gold/25 bg-card/50 p-5 md:p-6"
+        >
+          <h2 className="mb-4 flex items-center gap-2 text-xl font-bold text-gold md:text-2xl" style={{ fontFamily: 'Cinzel, serif' }}>
+            <BarChart3 className="h-5 w-5" />
+            ✨ Tóm tắt & Kết luận
+          </h2>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            {reading.drawnCards.map((dc, i) => (
+              <div key={i} className="rounded-2xl border border-border/60 bg-background/45 p-4">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gold/90">{dc.position}</p>
+                  <Badge variant={dc.orientation === 'reversed' ? 'destructive' : 'secondary'} className="text-[10px]">
+                    {dc.orientation === 'reversed' ? 'Ngược' : 'Xuôi'}
+                  </Badge>
+                </div>
+
+                <p className="text-sm font-semibold text-foreground">{dc.cardName}</p>
+
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {dc.keywords.map((kw) => (
+                    <Badge key={kw} variant="secondary" className="border-gold/20 text-[10px]">
+                      {kw}
+                    </Badge>
+                  ))}
+                </div>
+
+                <p className="mt-3 text-sm leading-relaxed text-foreground/90">
+                  {dc.orientation === 'upright' ? dc.uprightMeaning : dc.reversedMeaning}
+                </p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="text-center text-sm text-muted-foreground mt-4"
+          transition={{ delay: 0.26 }}
+          className="mx-auto mt-8 flex max-w-5xl flex-wrap justify-center gap-3 rounded-2xl border border-border/60 bg-card/45 p-4"
         >
-          💡{' '}
-          <Link to="/login" className="text-gold hover:underline">
-            Đăng nhập
-          </Link>{' '}
-          để lưu lịch sử lên cloud và sử dụng AI luận giải đầy đủ
-        </motion.p>
-      )}
+          <Button onClick={handleSave} disabled={isSaved} className="gap-2 glow-gold">
+            <Save className="h-4 w-4" />
+            {isSaved ? 'Đã lưu ✓' : 'Lưu lịch sử'}
+          </Button>
+          <Button onClick={handleShare} variant="outline" className="gap-2 border-gold/30 text-gold hover:bg-secondary">
+            <Share2 className="h-4 w-4" />
+            Chia sẻ link
+          </Button>
+          <Link to={`/reading/${spreadId}`}>
+            <Button variant="outline" className="gap-2 border-gold/30 text-gold hover:bg-secondary">
+              <RotateCcw className="h-4 w-4" />
+              Xem lại trải bài
+            </Button>
+          </Link>
+          <Link to="/reading">
+            <Button variant="outline" className="gap-2 border-gold/30 text-gold hover:bg-secondary">
+              <RotateCcw className="h-4 w-4" />
+              Bói lại
+            </Button>
+          </Link>
+        </motion.div>
+
+        {!isAuthenticated && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.32 }}
+            className="mt-4 text-center text-sm text-muted-foreground"
+          >
+            <Link to="/login" className="text-gold hover:underline">
+              Đăng nhập
+            </Link>{' '}
+            để lưu lịch sử lên cloud và đồng bộ luận giải AI giữa các thiết bị.
+          </motion.p>
+        )}
+      </div>
     </div>
   );
 };
 
 export default ReadingResult;
-

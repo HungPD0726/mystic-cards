@@ -87,6 +87,14 @@
     );
   }
 
+  .mystic-grid {
+    background-image:
+      linear-gradient(hsl(var(--gold) / 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--gold) / 0.06) 1px, transparent 1px);
+    background-size: 38px 38px;
+    mask-image: radial-gradient(circle at center, black 35%, transparent 88%);
+  }
+
   .glow-gold {
     box-shadow:
       0 0 20px hsl(var(--gold) / 0.3),
