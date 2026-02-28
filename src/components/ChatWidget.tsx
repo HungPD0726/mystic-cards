@@ -1,22 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Sparkles, User, Bot, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '@/integrations/supabase/client';
+import { generateTarotChatReplyAI, ChatApiMessage } from '@/lib/aiService';
 
 interface Message {
   role: 'user' | 'model';
   text: string;
 }
 
-interface ChatApiMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
 const STORAGE_KEY = 'mystic_chat_history';
 const INITIAL_MESSAGE: Message = {
   role: 'model',
-  text: 'Xin chao. Toi la tro ly Tarot cua ban. Hay hoi toi bat cu dieu gi ve Tarot, tam linh, hoac cuoc song.',
+  text: 'Xin chào. Mình là trợ lý Tarot của bạn. Hãy hỏi mình về Tarot, cảm xúc hoặc điều bạn đang băn khoăn.',
 };
 
 const ChatWidget = () => {
@@ -80,34 +75,19 @@ const ChatWidget = () => {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('tarot-interpret', {
-        body: {
-          mode: 'chat',
-          messages: toChatApiHistory(nextMessages),
-        },
-      });
-
-      if (error) {
-        throw new Error(error.message || 'Khong the ket noi AI.');
-      }
-
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-
-      const reply =
-        typeof data?.reply === 'string' && data.reply.trim()
-          ? data.reply.trim()
-          : 'Toi chua the phan hoi luc nay. Vui long thu lai sau.';
+      const reply = await generateTarotChatReplyAI(toChatApiHistory(nextMessages));
 
       setMessages((prev) => [...prev, { role: 'model', text: reply }]);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Chat error:', err);
       setMessages((prev) => [
         ...prev,
         {
           role: 'model',
-          text: 'Co loi xay ra khi ket noi AI. Vui long thu lai sau.',
+          text:
+            err instanceof Error && err.message
+              ? `Kết nối AI thất bại: ${err.message}`
+              : 'Có lỗi xảy ra khi kết nối AI. Vui lòng thử lại sau.',
         },
       ]);
     } finally {
@@ -157,7 +137,7 @@ const ChatWidget = () => {
               <button
                 onClick={handleClearChat}
                 className="text-white/70 hover:text-white transition-colors p-1"
-                title="Xoa cuoc hoi thoai"
+                title="Xóa cuộc hội thoại"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -196,7 +176,7 @@ const ChatWidget = () => {
                     <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
                     <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
                     <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce"></span>
-                    <span className="text-xs text-muted-foreground ml-2 italic">Dang suy nghi...</span>
+                    <span className="text-xs text-muted-foreground ml-2 italic">Đang suy nghĩ...</span>
                   </div>
                 </div>
               )}
@@ -210,7 +190,7 @@ const ChatWidget = () => {
                   type="text"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="Hoi ve Tarot, tam linh..."
+                  placeholder="Hỏi về Tarot, tâm linh..."
                   disabled={isLoading}
                   className="w-full pl-4 pr-12 py-3 rounded-xl bg-card border-transparent focus:bg-background border focus:border-purple-500 focus:ring-0 outline-none transition-all text-sm text-foreground placeholder:text-muted-foreground"
                 />
