@@ -11,10 +11,23 @@ interface SpreadLayoutProps {
 }
 
 export function SpreadLayout({ spreadType, drawnCards, onCardClick, size = 'md' }: SpreadLayoutProps) {
-  const layoutClass =
-    spreadType === 'three-card'
-      ? 'mx-auto grid w-full max-w-5xl grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5'
-      : 'mx-auto flex w-full max-w-sm items-center justify-center';
+  // Get the number of cards to determine layout
+  const cardCount = drawnCards.length;
+  
+  // Determine layout based on spread type and card count
+  let layoutClass = 'mx-auto flex w-full flex-wrap items-center justify-center gap-4';
+  
+  if (spreadType === 'three-card') {
+    layoutClass = 'mx-auto grid w-full max-w-5xl grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5';
+  } else if (spreadType === 'one-card' || spreadType === 'yes-no' || spreadType === 'daily') {
+    layoutClass = 'mx-auto flex w-full max-w-sm items-center justify-center';
+  } else if (spreadType === 'celtic-cross') {
+    layoutClass = 'mx-auto grid w-full max-w-6xl grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-5';
+  } else if (cardCount === 4) {
+    layoutClass = 'mx-auto grid w-full max-w-4xl grid-cols-2 gap-4 sm:grid-cols-4';
+  } else if (cardCount >= 5) {
+    layoutClass = 'mx-auto grid w-full max-w-5xl grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5';
+  }
 
   return (
     <div className={cn(layoutClass)}>

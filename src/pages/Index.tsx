@@ -95,143 +95,148 @@ const Index = () => {
         />
 
         <div className="container relative z-10 mx-auto px-4 pb-16 pt-12 md:pt-16 lg:pb-24">
-          <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="text-center lg:text-left">
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="mb-5 inline-flex items-center gap-2 rounded-full border border-gold/30 bg-card/40 px-4 py-1.5"
-              >
-                <Sparkles className="h-4 w-4 text-gold" />
-                <span className="text-xs tracking-[0.22em] uppercase text-gold/90">Mystic Tarot Reading</span>
-              </motion.div>
+          <div className="mx-auto max-w-5xl text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="mb-5 inline-flex items-center gap-2 rounded-full border border-gold/30 bg-card/40 px-4 py-1.5"
+            >
+              <Sparkles className="h-4 w-4 text-gold" />
+              <span className="text-xs tracking-[0.22em] uppercase text-gold/90">Mystic Tarot Reading</span>
+            </motion.div>
 
-              <motion.h1
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.75, delay: 0.1 }}
-                className="text-4xl font-bold leading-tight md:text-6xl lg:text-7xl"
-                style={{ fontFamily: 'Cinzel, serif' }}
-              >
-                <span className="bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-500 bg-clip-text text-transparent">
-                  Giải Mã Trải Bài
-                </span>
-                <br />
-                <span className="text-foreground">Khai Mở Trực Giác</span>
-              </motion.h1>
+            <motion.h1
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.75, delay: 0.1 }}
+              className="text-4xl font-bold leading-[1.05] md:text-6xl lg:text-7xl"
+              style={{ fontFamily: 'Cinzel, serif' }}
+            >
+              <span className="bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-500 bg-clip-text text-transparent">
+                Giải Mã Trải Bài
+              </span>
+              <br />
+              <span className="text-foreground">Khai Mở Trực Giác</span>
+            </motion.h1>
 
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.7, delay: 0.25 }}
-                className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl lg:mx-0"
-              >
-                78 lá bài không nói trước tương lai, nhưng soi sáng lựa chọn hiện tại. Hãy bắt đầu với câu hỏi bạn đang
-                thật sự băn khoăn.
-              </motion.p>
-
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.35 }}
-                className="mt-10 flex flex-col justify-center gap-4 sm:flex-row lg:justify-start"
-              >
-                <Link to="/reading">
-                  <Button size="lg" className="min-w-[210px] gap-2 px-8 py-6 text-base glow-gold">
-                    <Sparkles className="h-5 w-5" />
-                    Bắt đầu xem bài
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-                <Link to="/cards">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="min-w-[210px] gap-2 border-gold/40 px-8 py-6 text-base text-gold hover:bg-secondary"
-                  >
-                    <BookOpen className="h-4 w-4" />
-                    Thư viện lá bài
-                  </Button>
-                </Link>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.75, delay: 0.45 }}
-                className="mt-10 grid gap-3 sm:grid-cols-3"
-              >
-                <div className="rounded-xl border border-border/60 bg-background/40 px-4 py-3 text-left backdrop-blur">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Trải bài phổ biến</p>
-                  <p className="mt-1 text-sm font-semibold">Quá khứ - Hiện tại - Tương lai</p>
-                </div>
-                <div className="rounded-xl border border-border/60 bg-background/40 px-4 py-3 text-left backdrop-blur">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Mục tiêu</p>
-                  <p className="mt-1 text-sm font-semibold">Rõ câu hỏi, rõ hướng đi</p>
-                </div>
-                <div className="rounded-xl border border-border/60 bg-background/40 px-4 py-3 text-left backdrop-blur">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Kèm AI diễn giải</p>
-                  <p className="mt-1 text-sm font-semibold">Nhanh, sâu sắc, dễ hiểu</p>
-                </div>
-              </motion.div>
-            </div>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.7, delay: 0.25 }}
+              className="mx-auto mt-6 max-w-3xl text-lg text-muted-foreground md:text-2xl"
+            >
+              78 lá bài không nói trước tương lai, nhưng soi sáng lựa chọn hiện tại. Hãy bắt đầu với câu hỏi bạn đang
+              thật sự băn khoăn.
+            </motion.p>
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.75, delay: 0.4 }}
-              className="relative mx-auto w-full max-w-xl"
+              transition={{ duration: 0.7, delay: 0.35 }}
+              className="mt-10 flex flex-col justify-center gap-4 sm:flex-row"
             >
-              <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-amber-300/20 blur-3xl" />
-              <div className="pointer-events-none absolute -bottom-8 -left-8 h-28 w-28 rounded-full bg-blue-300/15 blur-3xl" />
-              <div className="relative rounded-3xl border border-gold/25 bg-card/70 p-5 shadow-[0_24px_80px_hsl(var(--mystic-purple)/0.22)] backdrop-blur-md sm:p-6">
-                <p className="text-xs uppercase tracking-[0.2em] text-gold/90">Phiên xem bài gợi ý</p>
-                <h2 className="mt-2 text-2xl font-semibold leading-tight text-foreground" style={{ fontFamily: 'Cinzel, serif' }}>
-                  Trải Ba Lá: Quá khứ, hiện tại, tương lai
-                </h2>
-                <p className="mt-3 text-sm text-muted-foreground">
-                  Một bố cục dễ bắt đầu để bạn nhìn tổng thể tình huống và nhận ra hướng đi phù hợp nhất lúc này.
+              <Link to="/reading">
+                <Button size="lg" className="min-w-[220px] gap-2 px-8 py-6 text-base glow-gold">
+                  <Sparkles className="h-5 w-5" />
+                  Bắt đầu xem bài
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Link to="/cards">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="min-w-[220px] gap-2 border-gold/40 px-8 py-6 text-base text-gold hover:bg-secondary"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  Thư viện lá bài
+                </Button>
+              </Link>
+            </motion.div>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.75, delay: 0.45 }}
+            className="mx-auto mt-10 grid max-w-4xl gap-3 sm:grid-cols-3"
+          >
+            <div className="rounded-xl border border-border/60 bg-background/40 px-4 py-3 text-left backdrop-blur">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Trải bài phổ biến</p>
+              <p className="mt-1 text-sm font-semibold">Quá khứ - Hiện tại - Tương lai</p>
+            </div>
+            <div className="rounded-xl border border-border/60 bg-background/40 px-4 py-3 text-left backdrop-blur">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Mục tiêu</p>
+              <p className="mt-1 text-sm font-semibold">Rõ câu hỏi, rõ hướng đi</p>
+            </div>
+            <div className="rounded-xl border border-border/60 bg-background/40 px-4 py-3 text-left backdrop-blur">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Kèm AI diễn giải</p>
+              <p className="mt-1 text-sm font-semibold">Nhanh, sâu sắc, dễ hiểu</p>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.75, delay: 0.4 }}
+            className="relative mx-auto mt-10 w-full max-w-4xl"
+          >
+            <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-amber-300/20 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-8 -left-8 h-28 w-28 rounded-full bg-blue-300/15 blur-3xl" />
+            <div className="relative rounded-3xl border border-gold/25 bg-card/70 p-5 shadow-[0_24px_80px_hsl(var(--mystic-purple)/0.22)] backdrop-blur-md sm:p-6">
+              <p className="text-center text-xs uppercase tracking-[0.2em] text-gold/90">Phiên xem bài gợi ý</p>
+              <h2
+                className="mt-2 text-center text-2xl font-semibold leading-tight text-foreground md:text-3xl"
+                style={{ fontFamily: 'Cinzel, serif' }}
+              >
+                Trải Ba Lá: Quá khứ, hiện tại, tương lai
+              </h2>
+              <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-muted-foreground">
+                Một bố cục dễ bắt đầu để bạn nhìn tổng thể tình huống và nhận ra hướng đi phù hợp nhất lúc này.
+              </p>
+
+              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {['Quá khứ', 'Hiện tại', 'Tương lai'].map((slot, idx) => (
+                  <Button
+                    key={slot}
+                    asChild
+                    variant="outline"
+                    className="h-auto w-full justify-between rounded-xl border-gold/25 bg-background/45 px-4 py-3 text-left hover:border-gold/45 hover:bg-secondary/40"
+                  >
+                    <Link to="/reading/three-card" className="w-full">
+                      <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
+                        <span className="text-base text-gold">{spreads[1].icon}</span>
+                        {slot}
+                      </span>
+                      <span className="text-xs text-muted-foreground">Lá {idx + 1}</span>
+                    </Link>
+                  </Button>
+                ))}
+              </div>
+
+              <div className="mt-6 rounded-2xl border border-border/60 bg-background/40 p-4">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Câu hỏi mẫu</p>
+                <p className="mt-2 text-sm leading-relaxed text-foreground/90">
+                  "Mình cần tập trung điều gì trong 30 ngày tới để cải thiện công việc và sự cân bằng cá nhân?"
                 </p>
+              </div>
 
-                <div className="mt-6 grid grid-cols-3 gap-3">
-                  {['Quá khứ', 'Hiện tại', 'Tương lai'].map((slot, idx) => (
-                    <div
-                      key={slot}
-                      className="group/card relative overflow-hidden rounded-xl border border-border/60 bg-background/50 p-3 text-center"
-                    >
-                      <div className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover/card:opacity-100 bg-[radial-gradient(circle_at_top,hsl(var(--gold)/0.18),transparent_70%)]" />
-                      <div className="relative z-10">
-                        <div className="mx-auto mb-2 flex aspect-[3/5] w-full max-w-[72px] items-center justify-center rounded-lg border border-border/70 bg-card/80 text-2xl text-gold shadow-[inset_0_0_24px_hsl(var(--gold)/0.08)]">
-                          {spreads[1].icon}
-                        </div>
-                        <p className="text-xs font-medium text-foreground">{slot}</p>
-                        <p className="mt-1 text-[11px] text-muted-foreground">Lá {idx + 1}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-6 rounded-2xl border border-border/60 bg-background/40 p-4">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Câu hỏi mẫu</p>
-                  <p className="mt-2 text-sm leading-relaxed text-foreground/90">
-                    "Mình cần tập trung điều gì trong 30 ngày tới để cải thiện công việc và sự cân bằng cá nhân?"
-                  </p>
-                </div>
-
+              <div className="mt-5 text-center">
                 <Link
                   to="/reading/three-card"
-                  className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-gold transition-colors hover:text-amber-300"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-gold transition-colors hover:text-amber-300"
                 >
                   Chọn trải bài này <ChevronRight className="h-4 w-4" />
                 </Link>
               </div>
-            </motion.div>
-          </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
-      <section className="container mx-auto px-4 py-16">
+      <section className="relative container mx-auto px-4 py-16">
+        <div className="pointer-events-none absolute left-1/2 top-1/2 h-56 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold/10 blur-3xl" />
         <motion.h2
           className="mb-3 text-center text-2xl font-bold text-gold md:text-3xl"
           style={{ fontFamily: 'Cinzel, serif' }}
@@ -258,8 +263,9 @@ const Index = () => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, delay: idx * 0.08 }}
               viewport={{ once: true }}
-              className="group rounded-2xl border border-border/60 bg-card/60 p-5 transition-all hover:-translate-y-1 hover:border-gold/35 hover:shadow-[0_16px_40px_hsl(var(--mystic-purple)/0.16)]"
+              className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/60 p-5 transition-all hover:-translate-y-1 hover:border-gold/35 hover:shadow-[0_16px_40px_hsl(var(--mystic-purple)/0.16)]"
             >
+              <div className="pointer-events-none absolute right-0 top-0 h-20 w-20 translate-x-7 -translate-y-7 rounded-full bg-gold/10 blur-2xl" />
               <div className="mb-4 flex items-center justify-between">
                 <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gold/40 bg-gold/10 text-sm font-semibold text-gold">
                   {idx + 1}

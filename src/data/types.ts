@@ -21,7 +21,7 @@ export interface DrawnCard {
   revealed: boolean;
 }
 
-export type SpreadType = 'one-card' | 'three-card' | 'yes-no';
+export type SpreadType = 'one-card' | 'three-card' | 'yes-no' | 'love' | 'career' | 'daily' | 'celtic-cross' | 'horseshoe';
 
 export interface SpreadPosition {
   id: string;

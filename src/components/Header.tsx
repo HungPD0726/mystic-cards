@@ -1,11 +1,13 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Sparkles, BookOpen, Home, History, LogIn, LogOut, User } from 'lucide-react';
+import { Sparkles, BookOpen, Home, History, LogIn, LogOut, User, Compass, Sun } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/features/auth/context/AuthContext';
 
 const navItems = [
   { to: '/', label: 'Trang chủ', icon: Home },
   { to: '/reading', label: 'Xem bói', icon: Sparkles },
+  { to: '/zodiac', label: 'Cung hoàng đạo', icon: Sun },
+  { to: '/sky-360', label: 'Bầu trời 360', icon: Compass },
   { to: '/history', label: 'Lịch sử', icon: History },
   { to: '/cards', label: 'Thư viện', icon: BookOpen },
 ];

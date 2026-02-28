@@ -81,7 +81,7 @@ const ReadingDraw = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mx-auto mb-6 max-w-5xl rounded-3xl border border-border/60 bg-card/45 p-5 backdrop-blur md:p-7"
+          className="mx-auto mb-6 max-w-6xl rounded-3xl border border-border/60 bg-card/45 p-5 backdrop-blur md:p-7"
         >
           <div className="grid gap-5 md:grid-cols-[1.1fr_0.9fr] md:items-end">
             <div>
@@ -118,7 +118,7 @@ const ReadingDraw = () => {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.04 }}
-          className="mx-auto max-w-5xl rounded-3xl border border-border/60 bg-card/40 p-4 md:p-6"
+          className="mx-auto max-w-6xl rounded-3xl border border-border/60 bg-card/40 p-4 md:p-6"
         >
           <AnimatePresence mode="wait">
             {!reading.isShuffled ? (
@@ -133,8 +133,8 @@ const ReadingDraw = () => {
                   Xáo bộ bài để bắt đầu. Sau đó bạn sẽ rút từng lá theo đúng vị trí của trải bài.
                 </p>
 
-                <div className="mt-6 flex justify-center overflow-x-auto pb-2">
-                  <div className="flex min-w-max items-end justify-center gap-1 px-3 sm:gap-2">
+                <div className="mt-6 flex justify-center overflow-x-auto pb-2 md:overflow-visible md:pb-0">
+                  <div className="flex min-w-max items-end justify-center gap-1 px-3 sm:gap-2 md:min-w-0 md:gap-3 md:px-1">
                     {Array.from({ length: 7 }).map((_, i) => (
                       <div
                         key={i}

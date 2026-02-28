@@ -17,6 +17,8 @@ import Login from "@/features/auth/pages/Login";
 import Register from "@/features/auth/pages/Register";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import Sky360 from "./pages/Sky360";
+import Zodiac from "./pages/Zodiac";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +39,8 @@ const App = () => (
               <Route path="/history" element={<ReadingHistory />} />
               <Route path="/cards" element={<CardLibrary />} />
               <Route path="/cards/:slug" element={<CardDetail />} />
+              <Route path="/sky-360" element={<Sky360 />} />
+              <Route path="/zodiac" element={<Zodiac />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/profile" element={<Profile />} />
