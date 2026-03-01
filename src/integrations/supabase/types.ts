@@ -14,6 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          metadata: Json
+          role: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          role: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          role?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chat_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      favorite_cards: {
+        Row: {
+          card_slug: string
+          created_at: string
+          id: string
+          note: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          card_slug: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          card_slug?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       readings: {
         Row: {
           ai_interpretation: string | null
@@ -47,6 +131,48 @@ export type Database = {
           spread_type?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          birth_date: string | null
+          created_at: string
+          display_name: string | null
+          language: string
+          preferred_spread: string | null
+          theme: string
+          updated_at: string
+          user_id: string
+          zodiac_sign: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          birth_date?: string | null
+          created_at?: string
+          display_name?: string | null
+          language?: string
+          preferred_spread?: string | null
+          theme?: string
+          updated_at?: string
+          user_id: string
+          zodiac_sign?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          birth_date?: string | null
+          created_at?: string
+          display_name?: string | null
+          language?: string
+          preferred_spread?: string | null
+          theme?: string
+          updated_at?: string
+          user_id?: string
+          zodiac_sign?: string | null
         }
         Relationships: []
       }

@@ -10,6 +10,7 @@ import { Search, LibraryBig, Sparkles, Filter, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type LibraryGroup = 'all' | CardGroup;
+const PAGE_SIZE = 24;
 
 const groupDescription: Record<LibraryGroup, string> = {
   all: 'Tất cả 78 lá bài chuẩn Rider-Waite.',
@@ -34,6 +35,7 @@ const CardLibrary = () => {
   const [search, setSearch] = useState('');
   const [activeGroup, setActiveGroup] = useState<LibraryGroup>('all');
   const [loaded, setLoaded] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setLoaded(true), 260);
@@ -53,6 +55,13 @@ const CardLibrary = () => {
       return matchSearch && matchGroup;
     });
   }, [activeGroup, normalizedSearch]);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [activeGroup, normalizedSearch]);
+
+  const visibleCards = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
+  const hasMore = visibleCount < filtered.length;
 
   const groupCounts = useMemo(() => {
     const counts: Record<LibraryGroup, number> = {
@@ -218,7 +227,7 @@ const CardLibrary = () => {
             animate="visible"
             variants={{ visible: { transition: { staggerChildren: 0.015 } } }}
           >
-            {filtered.map((card) => (
+            {visibleCards.map((card) => (
               <motion.div key={card.id} variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}>
                 <Link
                   to={`/cards/${card.slug}`}
@@ -252,6 +261,18 @@ const CardLibrary = () => {
               </motion.div>
             ))}
           </motion.div>
+        )}
+
+        {loaded && hasMore && (
+          <div className="mx-auto mt-8 flex max-w-6xl justify-center">
+            <Button
+              variant="outline"
+              onClick={() => setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filtered.length))}
+              className="border-gold/35 text-gold hover:bg-secondary"
+            >
+              Xem thêm ({filtered.length - visibleCount} lá còn lại)
+            </Button>
+          </div>
         )}
 
         {loaded && filtered.length === 0 && (
