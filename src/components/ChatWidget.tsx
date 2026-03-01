@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Sparkles, User, Bot, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { generateTarotChatReplyAI, ChatApiMessage } from '@/lib/aiService';
+import type { ChatApiMessage } from '@/lib/aiService';
 
 interface Message {
   role: 'user' | 'model';
@@ -13,6 +13,15 @@ const INITIAL_MESSAGE: Message = {
   role: 'model',
   text: 'Xin chào. Mình là trợ lý Tarot của bạn. Hãy hỏi mình về Tarot, cảm xúc hoặc điều bạn đang băn khoăn.',
 };
+
+let aiServiceModulePromise: Promise<typeof import('@/lib/aiService')> | null = null;
+
+function loadAiService() {
+  if (!aiServiceModulePromise) {
+    aiServiceModulePromise = import('@/lib/aiService');
+  }
+  return aiServiceModulePromise;
+}
 
 const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -75,6 +84,7 @@ const ChatWidget = () => {
     setIsLoading(true);
 
     try {
+      const { generateTarotChatReplyAI } = await loadAiService();
       const reply = await generateTarotChatReplyAI(toChatApiHistory(nextMessages));
 
       setMessages((prev) => [...prev, { role: 'model', text: reply }]);

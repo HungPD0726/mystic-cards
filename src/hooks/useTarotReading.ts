@@ -1,7 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { allCards } from '@/data/cards';
 import { getSpread } from '@/data/spreads';
-import { DrawnCard, ReadingHistory, SpreadType, TarotCard, Orientation } from '@/data/types';
+import { DrawnCard, ReadingHistory, SpreadType, Orientation } from '@/data/types';
 
 function fisherYatesShuffle<T>(array: T[]): T[] {
   const arr = [...array];
@@ -18,24 +18,36 @@ function randomOrientation(): Orientation {
 
 export function useTarotReading(spreadType: SpreadType) {
   const spread = getSpread(spreadType);
-  const [deck, setDeck] = useState<TarotCard[]>([...allCards]);
   const [drawnCards, setDrawnCards] = useState<DrawnCard[]>([]);
   const [isShuffling, setIsShuffling] = useState(false);
   const [isShuffled, setIsShuffled] = useState(false);
   const [drawIndex, setDrawIndex] = useState(0);
+  const shuffleTimerRef = useRef<number | null>(null);
 
   const cardCount = spread?.cardCount ?? 1;
   const allDrawn = drawIndex >= cardCount;
   const allRevealed = drawnCards.length === cardCount && drawnCards.every(c => c.revealed);
 
+  useEffect(() => {
+    return () => {
+      if (shuffleTimerRef.current !== null) {
+        window.clearTimeout(shuffleTimerRef.current);
+      }
+    };
+  }, []);
+
   const shuffle = useCallback(() => {
+    if (shuffleTimerRef.current !== null) {
+      window.clearTimeout(shuffleTimerRef.current);
+    }
+
     setIsShuffling(true);
     setDrawnCards([]);
     setDrawIndex(0);
 
-    setTimeout(() => {
+    shuffleTimerRef.current = window.setTimeout(() => {
       const shuffled = fisherYatesShuffle(allCards);
-      setDeck(shuffled);
+      shuffleTimerRef.current = null;
       setIsShuffling(false);
       setIsShuffled(true);
 
@@ -53,15 +65,20 @@ export function useTarotReading(spreadType: SpreadType) {
   }, [spread, cardCount]);
 
   const drawNext = useCallback(() => {
-    if (drawIndex >= cardCount) return;
-    setDrawnCards(prev =>
-      prev.map((dc, i) => (i === drawIndex ? { ...dc, revealed: true } : dc))
-    );
-    setDrawIndex(prev => prev + 1);
-  }, [drawIndex, cardCount]);
+    setDrawIndex((currentIndex) => {
+      if (currentIndex >= cardCount) return currentIndex;
+      setDrawnCards((prev) =>
+        prev.map((dc, i) => (i === currentIndex ? { ...dc, revealed: true } : dc))
+      );
+      return currentIndex + 1;
+    });
+  }, [cardCount]);
 
   const reset = useCallback(() => {
-    setDeck([...allCards]);
+    if (shuffleTimerRef.current !== null) {
+      window.clearTimeout(shuffleTimerRef.current);
+      shuffleTimerRef.current = null;
+    }
     setDrawnCards([]);
     setIsShuffled(false);
     setIsShuffling(false);
@@ -70,7 +87,6 @@ export function useTarotReading(spreadType: SpreadType) {
 
   return {
     spread,
-    deck,
     drawnCards,
     isShuffling,
     isShuffled,
