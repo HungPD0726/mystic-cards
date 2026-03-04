@@ -1,0 +1,22 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" fill="none">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1200" y2="720" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f97316"/>
+      <stop offset="1" stop-color="#facc15"/>
+    </linearGradient>
+    <radialGradient id="r" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(600 360) rotate(90) scale(360 600)">
+      <stop stop-color="white" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="white" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="720" fill="#090712"/>
+  <rect width="1200" height="720" fill="url(#g)" fill-opacity="0.25"/>
+  <rect width="1200" height="720" fill="url(#r)"/>
+  <circle cx="182" cy="120" r="2" fill="white" fill-opacity="0.7"/>
+  <circle cx="1022" cy="142" r="3" fill="white" fill-opacity="0.55"/>
+  <circle cx="968" cy="560" r="2" fill="white" fill-opacity="0.65"/>
+  <circle cx="286" cy="584" r="2" fill="white" fill-opacity="0.6"/>
+  <path d="M150 550L330 470L510 550L690 470L870 550L1050 470" stroke="white" stroke-opacity="0.15" stroke-width="2"/>
+  <text x="600" y="355" text-anchor="middle" fill="white" fill-opacity="0.95" font-size="260" font-family="'Segoe UI Symbol', 'Noto Sans Symbols', serif">♈</text>
+  <text x="600" y="460" text-anchor="middle" fill="white" fill-opacity="0.95" font-size="60" font-weight="600" font-family="'Cinzel', serif">Bach Duong</text>
+</svg>
