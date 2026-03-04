@@ -21,7 +21,17 @@ export interface DrawnCard {
   revealed: boolean;
 }
 
-export type SpreadType = 'one-card' | 'three-card' | 'yes-no' | 'love' | 'career' | 'daily' | 'celtic-cross' | 'horseshoe';
+export type SpreadType =
+  | 'one-card'
+  | 'three-card'
+  | 'yes-no'
+  | 'love'
+  | 'career'
+  | 'daily'
+  | 'celtic-cross'
+  | 'horseshoe';
+
+export type SpreadCategory = 'quick-guidance' | 'classic' | 'theme' | 'deep-dive';
 
 export interface SpreadPosition {
   id: string;
@@ -36,6 +46,11 @@ export interface SpreadConfig {
   cardCount: number;
   positions: SpreadPosition[];
   icon: string;
+  category: SpreadCategory;
+  duration: string;
+  intensity: 'Nhẹ' | 'Vừa' | 'Sâu';
+  idealFor: string;
+  bestFor: string[];
 }
 
 export interface ReadingHistory {

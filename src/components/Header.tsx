@@ -29,16 +29,16 @@ export function Header() {
       <div className="container mx-auto h-16 px-4">
         <div className="flex h-full items-center justify-between gap-3">
           <Link to="/" className="group flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full border border-gold/40 bg-gradient-to-br from-amber-300/30 to-purple-500/25 shadow-[0_0_20px_hsl(var(--gold)/0.18)]">
-              <span className="text-base">🔮</span>
+            <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-gold/40 bg-gradient-to-br from-amber-300/20 to-purple-500/15 shadow-[0_0_20px_hsl(var(--gold)/0.18)]">
+              <img src="/brand-mark.svg" alt="Astral Arcana" className="h-8 w-8" />
             </div>
             <div className="leading-tight">
-              <p className="text-sm text-gold/80 tracking-[0.2em] uppercase">Mystic</p>
+              <p className="text-[11px] uppercase tracking-[0.22em] text-gold/80">Tarot / Zodiac</p>
               <p
                 className="text-base font-semibold text-foreground transition-colors group-hover:text-gold"
                 style={{ fontFamily: 'Cinzel, serif' }}
               >
-                Tarot Cards
+                Astral Arcana
               </p>
             </div>
           </Link>
@@ -75,7 +75,7 @@ export function Header() {
                   )}
                 >
                   <User className="h-4 w-4" />
-                  <span className="hidden lg:inline max-w-[120px] truncate">{displayName}</span>
+                  <span className="hidden max-w-[120px] truncate lg:inline">{displayName}</span>
                 </Link>
                 <button
                   onClick={handleLogout}
@@ -105,4 +105,3 @@ export function Header() {
     </header>
   );
 }
-

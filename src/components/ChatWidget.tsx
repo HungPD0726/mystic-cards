@@ -11,7 +11,7 @@ interface Message {
 const STORAGE_KEY = 'mystic_chat_history';
 const INITIAL_MESSAGE: Message = {
   role: 'model',
-  text: 'Xin chào. Mình là trợ lý Tarot của bạn. Hãy hỏi mình về Tarot, cảm xúc hoặc điều bạn đang băn khoăn.',
+  text: 'Xin chào. Mình là trợ lý Astral Arcana. Hãy hỏi mình về Tarot, cung hoàng đạo, cảm xúc hoặc điều bạn đang băn khoăn.',
 };
 
 let aiServiceModulePromise: Promise<typeof import('@/lib/aiService')> | null = null;
@@ -134,7 +134,7 @@ const ChatWidget = () => {
                 </div>
                 <div>
                   <h3 className="font-bold tracking-wide" style={{ fontFamily: 'Cinzel, serif' }}>
-                    Mystic Guide
+                    Astral Guide
                   </h3>
                   <div className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -200,7 +200,7 @@ const ChatWidget = () => {
                   type="text"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="Hỏi về Tarot, tâm linh..."
+                  placeholder="Hỏi về Tarot, cung hoàng đạo, tâm linh..."
                   disabled={isLoading}
                   className="w-full pl-4 pr-12 py-3 rounded-xl bg-card border-transparent focus:bg-background border focus:border-purple-500 focus:ring-0 outline-none transition-all text-sm text-foreground placeholder:text-muted-foreground"
                 />

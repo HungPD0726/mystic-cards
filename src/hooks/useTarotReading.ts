@@ -26,7 +26,7 @@ export function useTarotReading(spreadType: SpreadType) {
 
   const cardCount = spread?.cardCount ?? 1;
   const allDrawn = drawIndex >= cardCount;
-  const allRevealed = drawnCards.length === cardCount && drawnCards.every(c => c.revealed);
+  const allRevealed = drawnCards.length === cardCount && drawnCards.every((card) => card.revealed);
 
   useEffect(() => {
     return () => {
@@ -35,6 +35,18 @@ export function useTarotReading(spreadType: SpreadType) {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (shuffleTimerRef.current !== null) {
+      window.clearTimeout(shuffleTimerRef.current);
+      shuffleTimerRef.current = null;
+    }
+
+    setDrawnCards([]);
+    setIsShuffling(false);
+    setIsShuffled(false);
+    setDrawIndex(0);
+  }, [spreadType]);
 
   const shuffle = useCallback(() => {
     if (shuffleTimerRef.current !== null) {

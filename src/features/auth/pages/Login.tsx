@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { Sparkles, Eye, EyeOff, Mail, Lock, Github, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, Github, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { Button } from '@/components/ui/button';
 
@@ -117,14 +117,16 @@ const Login = () => {
           className="overflow-hidden rounded-2xl border border-border/50 bg-card/85 shadow-2xl backdrop-blur-xl"
         >
           <div className="border-b border-border/50 px-6 pt-8 pb-6 text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-gold/35 bg-gold/10">
-              <Sparkles className="h-6 w-6 text-gold" />
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-gold/35 bg-gold/10">
+              <img src="/brand-mark.svg" alt="Astral Arcana" className="h-11 w-11" />
             </div>
             <h1 className="text-2xl font-bold text-foreground" style={{ fontFamily: 'Cinzel, serif' }}>
-              Mystic Cards
+              Astral Arcana
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {isLogin ? 'Đăng nhập để tiếp tục hành trình Tarot.' : 'Tạo tài khoản để lưu lịch sử và đồng bộ cloud.'}
+              {isLogin
+                ? 'Đăng nhập để tiếp tục hành trình Tarot, cung hoàng đạo và chiêm tinh.'
+                : 'Tạo tài khoản để lưu lịch sử, đồng bộ cloud và cá nhân hóa trải nghiệm huyền học.'}
             </p>
           </div>
 

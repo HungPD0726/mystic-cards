@@ -1,216 +1,99 @@
-# Mystic Cards Backend API
+# Astral Arcana Backend API
 
-Backend API cho ứng dụng Tarot Reading **Mystic Cards**, được xây dựng bằng Express.js, TypeScript và SQL Server.
+Backend cho ứng dụng Astral Arcana, dùng để xác thực người dùng và lưu lịch sử xem bói.
 
-## 🚀 Công nghệ sử dụng
+## Stack
 
-- **Express.js** - Web framework
-- **TypeScript** - Type safety
-- **Sequelize** - ORM cho SQL Server
-- **JWT** - Authentication
-- **Bcrypt** - Password hashing
-
-## 📋 Yêu cầu
-
-- Node.js >= 16
+- Express.js
+- TypeScript
 - SQL Server
-- npm hoặc yarn
+- Sequelize
+- JWT
 
-## ⚙️ Cài đặt
+## Yêu cầu
 
-### 1. Install dependencies
+- Node.js 18+
+- SQL Server
+- npm
+
+## Cài đặt
 
 ```bash
 cd server
 npm install
 ```
 
-### 2. Cấu hình Environment Variables
+Tạo file `.env` từ `server/.env.example`, sau đó cấu hình các biến như:
 
-Copy file `.env.example` thành `.env` và cập nhật thông tin:
+- `PORT`
+- `NODE_ENV`
+- `DB_HOST`
+- `DB_PORT`
+- `DB_NAME`
+- `DB_USER`
+- `DB_PASSWORD`
+- `JWT_SECRET`
+- `JWT_EXPIRES_IN`
+- `CORS_ORIGIN`
 
-```env
-PORT=5000
-NODE_ENV=development
+## Chạy backend
 
-DB_HOST=localhost
-DB_PORT=1433
-DB_NAME=mystic_cards
-DB_USER=sa
-DB_PASSWORD=your_password
+Development:
 
-JWT_SECRET=your-secret-key
-JWT_EXPIRES_IN=7d
-
-CORS_ORIGIN=http://localhost:5173
+```bash
+npm run dev
 ```
 
-### 3. Seed Database
+Build:
 
-Chạy script để tạo database và seed 78 lá bài tarot:
+```bash
+npm run build
+```
+
+Production:
+
+```bash
+npm start
+```
+
+Seed dữ liệu:
 
 ```bash
 npm run seed
 ```
 
-### 4. Khởi động server
+Reset database:
 
 ```bash
-# Development mode (with auto-reload)
-npm run dev
-
-# Production mode
-npm run build
-npm start
+npm run reset-db
 ```
 
-Server sẽ chạy tại: `http://localhost:5000`
+## API hiện có
 
-## 📡 API Endpoints
+Authentication:
 
-### Authentication
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
 
-- `POST /api/auth/register` - Đăng ký user mới
+Readings:
 
-  ```json
-  {
-    "email": "user@example.com",
-    "username": "username",
-    "password": "password123"
-  }
-  ```
+- `GET /api/readings`
+- `POST /api/readings`
+- `GET /api/readings/:id`
+- `DELETE /api/readings/:id`
 
-- `POST /api/auth/login` - Đăng nhập
+Cards:
 
-  ```json
-  {
-    "email": "user@example.com",
-    "password": "password123"
-  }
-  ```
+- `GET /api/cards`
+- `GET /api/cards/:slug`
 
-- `GET /api/auth/me` - Lấy thông tin user hiện tại (requires authentication)
+Health:
 
-### Readings (Requires Authentication)
+- `GET /api/health`
 
-- `GET /api/readings` - Lấy danh sách readings
-  - Query params: `page`, `limit`
-- `POST /api/readings` - Lưu reading mới
+## Ghi chú
 
-  ```json
-  {
-    "spreadType": "three-card",
-    "spreadName": "Ba Lá",
-    "drawnCards": [...],
-    "notes": "Optional notes"
-  }
-  ```
-
-- `GET /api/readings/:id` - Lấy chi tiết một reading
-
-- `DELETE /api/readings/:id` - Xóa reading
-
-### Cards (Public)
-
-- `GET /api/cards` - Lấy tất cả tarot cards
-  - Query params: `group`, `search`
-
-- `GET /api/cards/:slug` - Lấy card theo slug
-
-### Health Check
-
-- `GET /api/health` - Kiểm tra server status
-
-## 🔐 Authentication
-
-API sử dụng JWT tokens. Sau khi login, include token trong header:
-
-```
-Authorization: Bearer <your_token_here>
-```
-
-## 📁 Project Structure
-
-```
-server/
-├── src/
-│   ├── config/
-│   │   └── database.ts       # Database configuration
-│   ├── controllers/
-│   │   ├── authController.ts
-│   │   ├── readingController.ts
-│   │   └── cardController.ts
-│   ├── middleware/
-│   │   ├── auth.ts
-│   │   └── errorHandler.ts
-│   ├── models/
-│   │   ├── User.ts
-│   │   ├── Reading.ts
-│   │   ├── Card.ts
-│   │   └── index.ts
-│   ├── routes/
-│   │   ├── auth.ts
-│   │   ├── readings.ts
-│   │   ├── cards.ts
-│   │   └── index.ts
-│   ├── scripts/
-│   │   └── seed.ts
-│   ├── app.ts
-│   └── server.ts
-├── .env
-├── .env.example
-├── package.json
-└── tsconfig.json
-```
-
-## 🗄️ Database Schema
-
-### Users Table
-
-- `id` - Primary Key
-- `email` - Unique, Email format
-- `username` - Unique
-- `password` - Hashed với bcrypt
-- `createdAt`, `updatedAt`
-
-### Readings Table
-
-- `id` - Primary Key
-- `userId` - Foreign Key → Users
-- `spreadType` - String (one-card, three-card, yes-no)
-- `spreadName` - String
-- `drawnCards` - JSON
-- `notes` - Text (optional)
-- `createdAt`, `updatedAt`
-
-### Cards Table
-
-- `id` - Primary Key
-- `name` - String
-- `slug` - Unique
-- `imagePath` - String
-- `keywords` - JSON Array
-- `uprightMeaning` - Text
-- `reversedMeaning` - Text
-- `description` - Text
-- `group` - String (major, wands, cups, swords, pentacles)
-
-## 🛠️ Development
-
-```bash
-# Run in development mode with auto-reload
-npm run dev
-
-# Build TypeScript
-npm run build
-
-# Run production build
-npm start
-```
-
-## 📝 Notes
-
-- Passwords được hash tự động khi tạo/update user
-- JWT tokens expire sau 7 ngày (configurable)
-- Database sync tự động khi start server (development mode)
-- CORS được configure cho frontend ở port 5173
+- Frontend local hiện thường chạy ở `http://localhost:8080`.
+- CORS được đọc từ `CORS_ORIGIN` và có thể khai báo nhiều origin, ngăn cách bằng dấu phẩy.
+- File mô tả backend cũ bị lỗi encoding và đã được thay bằng bản ngắn, đúng với codebase hiện tại.

@@ -1,73 +1,76 @@
-# Welcome to your Lovable project
+# Astral Arcana
 
-## Project info
+Ứng dụng xem bói theo chủ đề huyền học, tập trung vào Tarot, cung hoàng đạo và phần luận giải có hỗ trợ AI.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Tính năng chính
 
-## How can I edit this code?
+- Chọn nhiều kiểu trải bài: nhanh, cổ điển, theo chủ đề và chuyên sâu.
+- Rút bài trực quan theo từng vị trí, xem nghĩa chi tiết trước khi sang kết quả.
+- Tạo luận giải AI cho toàn bộ spread.
+- Lưu lịch sử cục bộ hoặc đồng bộ qua Supabase khi đã đăng nhập.
+- Các module bổ trợ như Zodiac và Sky 360.
 
-There are several ways of editing your application.
+## Frontend
 
-**Use Lovable**
+Yêu cầu:
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+- Node.js 18+
+- npm
 
-Changes made via Lovable will be committed automatically to this repo.
+Chạy local:
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Build production:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+npm run build
+```
 
-**Use GitHub Codespaces**
+Test:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```bash
+npm run test
+```
 
-## What technologies are used for this project?
+Các biến môi trường frontend đang được dùng:
 
-This project is built with:
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `VITE_API_BASE_URL`
+- `VITE_BASE_PATH` cho GitHub Pages nếu cần
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Backend
 
-## How can I deploy this project?
+Thư mục `server/` chứa API Express + TypeScript cho xác thực và lưu lịch sử xem bói.
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+Chạy backend:
 
-## Can I connect a custom domain to my Lovable project?
+```bash
+cd server
+npm install
+npm run dev
+```
 
-Yes, you can!
+Tài liệu backend chi tiết hơn nằm ở [server/README.md](/d:/Dự án tự tạo/mystic-cards/server/README.md).
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Cấu trúc chính
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+- `src/pages/ReadingPicker.tsx`: trang chọn spread tại `/reading`
+- `src/pages/ReadingDraw.tsx`: màn rút bài theo spread
+- `src/pages/ReadingResult.tsx`: màn tổng hợp kết quả và luận giải AI
+- `src/data/spreads.ts`: cấu hình toàn bộ spread
+- `src/lib/readingSession.ts`: helper lưu phiên xem bói hiện tại
+
+## Deploy
+
+Project đang có script deploy GitHub Pages:
+
+```bash
+npm run deploy
+```
+
+Nếu deploy dưới subpath, đặt `VITE_BASE_PATH` tương ứng trước khi build.

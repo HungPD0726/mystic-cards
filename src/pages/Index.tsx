@@ -103,7 +103,7 @@ const Index = () => {
               className="mb-5 inline-flex items-center gap-2 rounded-full border border-gold/30 bg-card/40 px-4 py-1.5"
             >
               <Sparkles className="h-4 w-4 text-gold" />
-              <span className="text-xs tracking-[0.22em] uppercase text-gold/90">Mystic Tarot Reading</span>
+              <span className="text-xs tracking-[0.22em] uppercase text-gold/90">Astral Arcana • Tarot & Zodiac</span>
             </motion.div>
 
             <motion.h1
