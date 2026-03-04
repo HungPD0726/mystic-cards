@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Droplets, Flame, Mountain, Sparkles, Sun, Wind } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { publicAsset } from '@/lib/publicAsset';
 
 type ZodiacElement = 'Lửa' | 'Đất' | 'Khí' | 'Nước';
 
@@ -546,6 +547,7 @@ function ConstellationMap({ sign, className, compact = false }: ConstellationMap
 }
 
 const Zodiac = () => {
+  const placeholderSrc = publicAsset('placeholder.svg');
   const [activeSignId, setActiveSignId] = useState(() => getCurrentSignIdByDate(new Date()));
   const activeSign = useMemo(() => zodiacSigns.find((sign) => sign.id === activeSignId) ?? zodiacSigns[0], [activeSignId]);
 
@@ -633,7 +635,7 @@ const Zodiac = () => {
                       className="h-full w-full object-cover"
                       loading="lazy"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/placeholder.svg';
+                        (e.target as HTMLImageElement).src = placeholderSrc;
                       }}
                     />
                   </div>
@@ -668,7 +670,7 @@ const Zodiac = () => {
                 alt={`Biểu tượng ${activeSign.name}`}
                 className="h-44 w-full object-cover md:h-52"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/placeholder.svg';
+                  (e.target as HTMLImageElement).src = placeholderSrc;
                 }}
               />
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,hsl(256_30%_8%_/_0.82),transparent_55%)]" />
@@ -793,7 +795,7 @@ const Zodiac = () => {
                     className="h-16 w-full object-cover"
                     loading="lazy"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder.svg';
+                      (e.target as HTMLImageElement).src = placeholderSrc;
                     }}
                   />
                 </div>

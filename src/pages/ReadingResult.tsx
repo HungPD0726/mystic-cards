@@ -16,6 +16,7 @@ import {
 } from '@/lib/readingSession';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { publicAsset } from '@/lib/publicAsset';
 
 const ReadingResult = () => {
   const { spread: spreadId } = useParams<{ spread: string }>();
@@ -24,6 +25,7 @@ const ReadingResult = () => {
   const [aiInterpretation, setAiInterpretation] = useState('');
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const placeholderSrc = publicAsset('placeholder.svg');
 
   const generateAIInterpretation = useCallback(async (readingData: StoredReading) => {
     setIsLoadingAI(true);
@@ -212,7 +214,7 @@ const ReadingResult = () => {
                     card.orientation === 'reversed' && 'rotate-180',
                   )}
                   onError={(event) => {
-                    (event.target as HTMLImageElement).src = '/placeholder.svg';
+                    (event.target as HTMLImageElement).src = placeholderSrc;
                   }}
                 />
               </div>

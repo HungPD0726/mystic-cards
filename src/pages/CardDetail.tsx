@@ -10,10 +10,12 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
+import { publicAsset } from '@/lib/publicAsset';
 
 const CardDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const card = slug ? getCardBySlug(slug) : undefined;
+  const placeholderSrc = publicAsset('placeholder.svg');
 
   if (!card) {
     return (
@@ -51,7 +53,7 @@ const CardDetail = () => {
               src={card.imagePath}
               alt={card.name}
               className="h-full w-full object-contain p-2"
-              onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
+              onError={(e) => { (e.target as HTMLImageElement).src = placeholderSrc; }}
             />
           </div>
 

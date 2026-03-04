@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Orientation, TarotCard as TarotCardType } from '@/data/types';
+import { publicAsset } from '@/lib/publicAsset';
 
 interface TarotCardProps {
   card: TarotCardType;
@@ -25,6 +26,8 @@ export function TarotCard({
   className,
   size = 'md',
 }: TarotCardProps) {
+  const placeholderSrc = publicAsset('placeholder.svg');
+
   return (
     <button
       type="button"
@@ -59,7 +62,7 @@ export function TarotCard({
               alt={card.name}
               className="h-3/4 w-auto object-contain"
               onError={(event) => {
-                (event.target as HTMLImageElement).src = '/placeholder.svg';
+                (event.target as HTMLImageElement).src = placeholderSrc;
               }}
             />
             <p className="mt-1 text-center text-xs font-semibold text-foreground" style={{ fontFamily: 'Cinzel, serif' }}>

@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Eye, EyeOff, Mail, Lock, Github, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { Button } from '@/components/ui/button';
+import { publicAsset } from '@/lib/publicAsset';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const brandMark = publicAsset('brand-mark.svg');
 
   const passwordChecks = useMemo(
     () => [
@@ -118,7 +120,7 @@ const Login = () => {
         >
           <div className="border-b border-border/50 px-6 pt-8 pb-6 text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-gold/35 bg-gold/10">
-              <img src="/brand-mark.svg" alt="Astral Arcana" className="h-11 w-11" />
+              <img src={brandMark} alt="Astral Arcana" className="h-11 w-11" />
             </div>
             <h1 className="text-2xl font-bold text-foreground" style={{ fontFamily: 'Cinzel, serif' }}>
               Astral Arcana

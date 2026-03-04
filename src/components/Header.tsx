@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Sparkles, BookOpen, Home, History, LogIn, LogOut, User, Compass, Sun } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { publicAsset } from '@/lib/publicAsset';
 
 const navItems = [
   { to: '/', label: 'Trang chủ', icon: Home },
@@ -16,6 +17,7 @@ export function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
+  const brandMark = publicAsset('brand-mark.svg');
 
   const handleLogout = async () => {
     await logout();
@@ -30,7 +32,7 @@ export function Header() {
         <div className="flex h-full items-center justify-between gap-3">
           <Link to="/" className="group flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-gold/40 bg-gradient-to-br from-amber-300/20 to-purple-500/15 shadow-[0_0_20px_hsl(var(--gold)/0.18)]">
-              <img src="/brand-mark.svg" alt="Astral Arcana" className="h-8 w-8" />
+              <img src={brandMark} alt="Astral Arcana" className="h-8 w-8" />
             </div>
             <div className="leading-tight">
               <p className="text-[11px] uppercase tracking-[0.22em] text-gold/80">Tarot / Zodiac</p>

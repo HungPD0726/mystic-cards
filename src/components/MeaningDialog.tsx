@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { DrawnCard } from '@/data/types';
+import { publicAsset } from '@/lib/publicAsset';
 
 interface MeaningDialogProps {
   drawnCard: DrawnCard | null;
@@ -19,6 +20,7 @@ export function MeaningDialog({ drawnCard, open, onOpenChange }: MeaningDialogPr
 
   const { card, orientation, position } = drawnCard;
   const isReversed = orientation === 'reversed';
+  const placeholderSrc = publicAsset('placeholder.svg');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -44,7 +46,7 @@ export function MeaningDialog({ drawnCard, open, onOpenChange }: MeaningDialogPr
               alt={card.name}
               className={`h-48 rounded-lg object-contain ${isReversed ? 'rotate-180' : ''}`}
               onError={(e) => {
-                (e.target as HTMLImageElement).src = '/placeholder.svg';
+                (e.target as HTMLImageElement).src = placeholderSrc;
               }}
             />
           </div>

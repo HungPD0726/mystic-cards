@@ -8,6 +8,7 @@ import { allCards, cardGroups } from '@/data/cards';
 import { CardGroup } from '@/data/types';
 import { Search, LibraryBig, Sparkles, Filter, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { publicAsset } from '@/lib/publicAsset';
 
 type LibraryGroup = 'all' | CardGroup;
 const PAGE_SIZE = 24;
@@ -32,6 +33,7 @@ const groupLabelMap = cardGroups
   );
 
 const CardLibrary = () => {
+  const placeholderSrc = publicAsset('placeholder.svg');
   const [search, setSearch] = useState('');
   const [activeGroup, setActiveGroup] = useState<LibraryGroup>('all');
   const [loaded, setLoaded] = useState(false);
@@ -243,7 +245,7 @@ const CardLibrary = () => {
                         className="h-full w-full object-contain p-1.5 transition-transform duration-300 group-hover:scale-[1.04]"
                         loading="lazy"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/placeholder.svg';
+                          (e.target as HTMLImageElement).src = placeholderSrc;
                         }}
                       />
                     </div>
