@@ -1,42 +1,48 @@
-# Astral Arcana Backend API
+# Mystic Cards Backend API
 
-Backend cho ứng dụng Astral Arcana, dùng để xác thực người dùng và lưu lịch sử xem bói.
+Backend API for the Mystic Cards tarot application.
 
 ## Stack
 
 - Express.js
 - TypeScript
-- SQL Server
 - Sequelize
+- PostgreSQL (default)
 - JWT
 
-## Yêu cầu
+## Requirements
 
 - Node.js 18+
-- SQL Server
+- PostgreSQL (local or managed cloud)
 - npm
 
-## Cài đặt
+## Setup
 
 ```bash
 cd server
 npm install
 ```
 
-Tạo file `.env` từ `server/.env.example`, sau đó cấu hình các biến như:
+Create `.env` from `server/.env.example`.
+
+Important variables:
 
 - `PORT`
 - `NODE_ENV`
+- `DB_DIALECT` (`postgres` by default)
+- `DATABASE_URL` (recommended for cloud deployments)
 - `DB_HOST`
 - `DB_PORT`
 - `DB_NAME`
 - `DB_USER`
 - `DB_PASSWORD`
+- `DB_SSL`
+- `DB_SSL_REJECT_UNAUTHORIZED`
 - `JWT_SECRET`
 - `JWT_EXPIRES_IN`
 - `CORS_ORIGIN`
 
-## Chạy backend
+## Scripts
 
 Development:
 
@@ -56,19 +62,19 @@ Production:
 npm start
 ```
 
-Seed dữ liệu:
+Seed data:
 
 ```bash
 npm run seed
 ```
 
-Reset database:
+Reset database schema:
 
 ```bash
 npm run reset-db
 ```
 
-## API hiện có
+## API
 
 Authentication:
 
@@ -91,9 +97,3 @@ Cards:
 Health:
 
 - `GET /api/health`
-
-## Ghi chú
-
-- Frontend local hiện thường chạy ở `http://localhost:8080`.
-- CORS được đọc từ `CORS_ORIGIN` và có thể khai báo nhiều origin, ngăn cách bằng dấu phẩy.
-- File mô tả backend cũ bị lỗi encoding và đã được thay bằng bản ngắn, đúng với codebase hiện tại.

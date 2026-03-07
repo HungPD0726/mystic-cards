@@ -2,7 +2,7 @@ services:
   - type: web
     name: mystic-cards-api
     runtime: node
-    region: singapore # Gần Việt Nam nhất
+    region: singapore
     plan: free
     rootDir: server
     buildCommand: npm install && npm run build
@@ -12,21 +12,19 @@ services:
         value: production
       - key: PORT
         value: 5000
-      - key: DB_HOST
-        sync: false # Thêm trên Render Dashboard
-      - key: DB_PORT
+      - key: DB_DIALECT
+        value: postgres
+      - key: DATABASE_URL
         sync: false
-      - key: DB_NAME
-        sync: false
-      - key: DB_USER
-        sync: false
-      - key: DB_PASSWORD
-        sync: false
+      - key: DB_SSL
+        value: true
+      - key: DB_SSL_REJECT_UNAUTHORIZED
+        value: false
       - key: JWT_SECRET
-        generateValue: true # Render sẽ tự tạo random secret
+        generateValue: true
       - key: JWT_EXPIRES_IN
         value: 7d
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: CORS_ORIGIN
-        sync: false # Thêm URL frontend Vercel tại đây
+        sync: false
