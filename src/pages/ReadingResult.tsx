@@ -17,6 +17,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { publicAsset } from '@/lib/publicAsset';
+import { TarotChat } from '@/components/TarotChat';
 
 const ReadingResult = () => {
   const { spread: spreadId } = useParams<{ spread: string }>();
@@ -349,6 +350,14 @@ const ReadingResult = () => {
             </Link>{' '}
             để lưu lịch sử lên cloud và đồng bộ luận giải AI giữa các thiết bị.
           </motion.p>
+        )}
+
+        {aiInterpretation && (
+          <TarotChat 
+            drawnCards={reading.drawnCards} 
+            spreadName={reading.spreadName} 
+            initialInterpretation={aiInterpretation} 
+          />
         )}
       </div>
     </div>

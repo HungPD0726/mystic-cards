@@ -1,0 +1,462 @@
+export type ZodiacElement = 'Lửa' | 'Đất' | 'Khí' | 'Nước';
+
+export type ConstellationStar = {
+  id: string;
+  x: number;
+  y: number;
+  size: number;
+};
+
+export type ZodiacConstellation = {
+  latinName: string;
+  description: string;
+  stars: ConstellationStar[];
+  links: Array<[string, string]>;
+};
+
+export type ZodiacSign = {
+  id: string;
+  name: string;
+  symbol: string;
+  dateRange: string;
+  element: ZodiacElement;
+  rulingPlanet: string;
+  keywords: string[];
+  strength: string;
+  challenge: string;
+  advice: string;
+  color: string;
+  imagePath: string;
+  range: [number, number];
+  constellation: ZodiacConstellation;
+};
+
+export const zodiacSigns: ZodiacSign[] = [
+  {
+    id: 'aries',
+    name: 'Bạch Dương',
+    symbol: '♈',
+    dateRange: '21/03 - 19/04',
+    element: 'Lửa',
+    rulingPlanet: 'Sao Hỏa',
+    keywords: ['Chủ động', 'Dũng cảm', 'Nhiệt huyết'],
+    strength: 'Bứt phá nhanh và rất quyết đoán khi đã chọn hướng đi.',
+    challenge: 'Dễ nóng vội hoặc hành động trước khi đánh giá đủ dữ kiện.',
+    advice: 'Đặt một mốc kiểm tra ngắn trước khi ra quyết định lớn.',
+    color: 'hsl(12 88% 62%)',
+    imagePath: '/zodiac/aries.svg',
+    range: [321, 419],
+    constellation: {
+      latinName: 'Aries',
+      description: 'Nhóm sao hình cong nhỏ, biểu tượng đầu cừu và tinh thần tiên phong.',
+      stars: [
+        { id: 'hamal', x: 18, y: 70, size: 3.3 },
+        { id: 'sheratan', x: 34, y: 57, size: 2.8 },
+        { id: 'mesarthim', x: 50, y: 46, size: 2.4 },
+        { id: 'botein', x: 67, y: 36, size: 2.2 },
+        { id: 'gamma-ari', x: 84, y: 28, size: 2.0 },
+      ],
+      links: [
+        ['hamal', 'sheratan'],
+        ['sheratan', 'mesarthim'],
+        ['mesarthim', 'botein'],
+        ['botein', 'gamma-ari'],
+      ],
+    },
+  },
+  {
+    id: 'taurus',
+    name: 'Kim Ngưu',
+    symbol: '♉',
+    dateRange: '20/04 - 20/05',
+    element: 'Đất',
+    rulingPlanet: 'Sao Kim',
+    keywords: ['Ổn định', 'Kiên trì', 'Thực tế'],
+    strength: 'Có năng lực xây dựng nền tảng bền vững và đáng tin cậy.',
+    challenge: 'Ngại thay đổi khi môi trường đã không còn phù hợp.',
+    advice: 'Giữ vững giá trị cốt lõi nhưng linh hoạt với cách thực hiện.',
+    color: 'hsl(124 42% 55%)',
+    imagePath: '/zodiac/taurus.svg',
+    range: [420, 520],
+    constellation: {
+      latinName: 'Taurus',
+      description: 'Cụm sao tạo thành đầu bò với Aldebaran sáng nổi bật.',
+      stars: [
+        { id: 'aldebaran', x: 40, y: 56, size: 3.5 },
+        { id: 'elnath', x: 64, y: 36, size: 2.8 },
+        { id: 'ain', x: 26, y: 40, size: 2.5 },
+        { id: 'hyadum', x: 36, y: 42, size: 2.3 },
+        { id: 'prima-hya', x: 53, y: 49, size: 2.1 },
+        { id: 'secunda-hya', x: 64, y: 58, size: 2.0 },
+        { id: 'zeta-tau', x: 76, y: 70, size: 2.1 },
+      ],
+      links: [
+        ['ain', 'hyadum'],
+        ['hyadum', 'aldebaran'],
+        ['aldebaran', 'prima-hya'],
+        ['prima-hya', 'secunda-hya'],
+        ['secunda-hya', 'zeta-tau'],
+        ['aldebaran', 'elnath'],
+      ],
+    },
+  },
+  {
+    id: 'gemini',
+    name: 'Song Tử',
+    symbol: '♊',
+    dateRange: '21/05 - 20/06',
+    element: 'Khí',
+    rulingPlanet: 'Sao Thủy',
+    keywords: ['Linh hoạt', 'Giao tiếp', 'Tò mò'],
+    strength: 'Học nhanh và kết nối thông tin tốt trong nhiều bối cảnh.',
+    challenge: 'Dễ phân tán năng lượng, khó giữ nhịp cho mục tiêu dài hạn.',
+    advice: 'Mỗi ngày ưu tiên một việc quan trọng nhất trước tiên.',
+    color: 'hsl(214 85% 66%)',
+    imagePath: '/zodiac/gemini.svg',
+    range: [521, 620],
+    constellation: {
+      latinName: 'Gemini',
+      description: 'Hai chuỗi sao song hành tượng trưng cặp song sinh Castor và Pollux.',
+      stars: [
+        { id: 'castor', x: 30, y: 24, size: 3.0 },
+        { id: 'pollux', x: 52, y: 28, size: 3.3 },
+        { id: 'wasat', x: 38, y: 48, size: 2.4 },
+        { id: 'mekbuda', x: 58, y: 52, size: 2.4 },
+        { id: 'tejat', x: 38, y: 73, size: 2.2 },
+        { id: 'propus', x: 57, y: 78, size: 2.1 },
+      ],
+      links: [
+        ['castor', 'wasat'],
+        ['wasat', 'tejat'],
+        ['pollux', 'mekbuda'],
+        ['mekbuda', 'propus'],
+        ['wasat', 'mekbuda'],
+      ],
+    },
+  },
+  {
+    id: 'cancer',
+    name: 'Cự Giải',
+    symbol: '♋',
+    dateRange: '21/06 - 22/07',
+    element: 'Nước',
+    rulingPlanet: 'Mặt Trăng',
+    keywords: ['Tinh tế', 'Bảo vệ', 'Gắn kết'],
+    strength: 'Đồng cảm tốt, biết tạo cảm giác an toàn cho người xung quanh.',
+    challenge: 'Dễ bị cảm xúc kéo lệch khỏi mục tiêu thực tế.',
+    advice: 'Ghi rõ ranh giới cảm xúc để giữ sự cân bằng trong quyết định.',
+    color: 'hsl(194 82% 65%)',
+    imagePath: '/zodiac/cancer.svg',
+    range: [621, 722],
+    constellation: {
+      latinName: 'Cancer',
+      description: 'Nhóm sao mờ với cụm Beehive ở trung tâm, tạo hình như chiếc càng cua.',
+      stars: [
+        { id: 'acubens', x: 26, y: 50, size: 2.8 },
+        { id: 'altarf', x: 44, y: 35, size: 2.4 },
+        { id: 'asellus-borealis', x: 50, y: 52, size: 2.7 },
+        { id: 'asellus-australis', x: 58, y: 60, size: 2.5 },
+        { id: 'tegmine', x: 74, y: 49, size: 2.3 },
+      ],
+      links: [
+        ['acubens', 'asellus-borealis'],
+        ['asellus-borealis', 'asellus-australis'],
+        ['asellus-australis', 'tegmine'],
+        ['asellus-borealis', 'altarf'],
+      ],
+    },
+  },
+  {
+    id: 'leo',
+    name: 'Sư Tử',
+    symbol: '♌',
+    dateRange: '23/07 - 22/08',
+    element: 'Lửa',
+    rulingPlanet: 'Mặt Trời',
+    keywords: ['Tự tin', 'Sáng tạo', 'Dẫn dắt'],
+    strength: 'Lan tỏa năng lượng tích cực và truyền cảm hứng mạnh.',
+    challenge: 'Dễ tự tạo áp lực phải luôn hoàn hảo trước người khác.',
+    advice: 'Tập trung giá trị thực tế thay vì chỉ kết quả bề mặt.',
+    color: 'hsl(41 94% 59%)',
+    imagePath: '/zodiac/leo.svg',
+    range: [723, 822],
+    constellation: {
+      latinName: 'Leo',
+      description: 'Hình dấu hỏi ngược (The Sickle) và phần thân sư tử kéo dài về phía đông.',
+      stars: [
+        { id: 'regulus', x: 24, y: 58, size: 3.5 },
+        { id: 'algieba', x: 33, y: 40, size: 2.8 },
+        { id: 'adhafera', x: 45, y: 30, size: 2.5 },
+        { id: 'ras-elased', x: 57, y: 36, size: 2.2 },
+        { id: 'zosma', x: 68, y: 50, size: 2.4 },
+        { id: 'denebola', x: 82, y: 62, size: 2.7 },
+      ],
+      links: [
+        ['regulus', 'algieba'],
+        ['algieba', 'adhafera'],
+        ['adhafera', 'ras-elased'],
+        ['ras-elased', 'zosma'],
+        ['zosma', 'denebola'],
+      ],
+    },
+  },
+  {
+    id: 'virgo',
+    name: 'Xử Nữ',
+    symbol: '♍',
+    dateRange: '23/08 - 22/09',
+    element: 'Đất',
+    rulingPlanet: 'Sao Thủy',
+    keywords: ['Tỉ mỉ', 'Phân tích', 'Kỷ luật'],
+    strength: 'Nhìn ra chi tiết then chốt và tối ưu quy trình rất tốt.',
+    challenge: 'Có thể tự phê bình quá mức dẫn đến trì hoãn.',
+    advice: 'Hoàn thành phiên bản 80% trước, tối ưu sau.',
+    color: 'hsl(146 45% 58%)',
+    imagePath: '/zodiac/virgo.svg',
+    range: [823, 922],
+    constellation: {
+      latinName: 'Virgo',
+      description: 'Một chuỗi sao dài với Spica là điểm sáng chủ đạo của chòm.',
+      stars: [
+        { id: 'zavijava', x: 18, y: 42, size: 2.3 },
+        { id: 'porrima', x: 31, y: 50, size: 2.4 },
+        { id: 'auva', x: 43, y: 44, size: 2.2 },
+        { id: 'vindemiatrix', x: 56, y: 34, size: 2.5 },
+        { id: 'heze', x: 67, y: 46, size: 2.0 },
+        { id: 'spica', x: 76, y: 62, size: 3.6 },
+        { id: 'syrma', x: 62, y: 72, size: 2.0 },
+        { id: 'kappa-vir', x: 45, y: 70, size: 1.9 },
+      ],
+      links: [
+        ['zavijava', 'porrima'],
+        ['porrima', 'auva'],
+        ['auva', 'vindemiatrix'],
+        ['vindemiatrix', 'heze'],
+        ['heze', 'spica'],
+        ['spica', 'syrma'],
+        ['syrma', 'kappa-vir'],
+      ],
+    },
+  },
+  {
+    id: 'libra',
+    name: 'Thiên Bình',
+    symbol: '♎',
+    dateRange: '23/09 - 22/10',
+    element: 'Khí',
+    rulingPlanet: 'Sao Kim',
+    keywords: ['Cân bằng', 'Hợp tác', 'Thẩm mỹ'],
+    strength: 'Giỏi kết nối và dung hòa các quan điểm khác nhau.',
+    challenge: 'Dễ chần chừ vì muốn mọi thứ hài hòa tuyệt đối.',
+    advice: 'Đặt thời hạn quyết định rõ ràng để tránh kéo dài.',
+    color: 'hsl(281 72% 66%)',
+    imagePath: '/zodiac/libra.svg',
+    range: [923, 1022],
+    constellation: {
+      latinName: 'Libra',
+      description: 'Nhóm sao nhỏ cân đối mô phỏng hai đĩa cân của nữ thần công lý.',
+      stars: [
+        { id: 'zubenelgenubi', x: 22, y: 58, size: 2.8 },
+        { id: 'zubeneschamali', x: 44, y: 44, size: 3.0 },
+        { id: 'brachium', x: 64, y: 38, size: 2.1 },
+        { id: 'sigma-lib', x: 75, y: 56, size: 2.0 },
+        { id: 'upsilon-lib', x: 56, y: 68, size: 1.9 },
+      ],
+      links: [
+        ['zubenelgenubi', 'zubeneschamali'],
+        ['zubeneschamali', 'brachium'],
+        ['brachium', 'sigma-lib'],
+        ['sigma-lib', 'upsilon-lib'],
+        ['upsilon-lib', 'zubenelgenubi'],
+      ],
+    },
+  },
+  {
+    id: 'scorpio',
+    name: 'Bọ Cạp',
+    symbol: '♏',
+    dateRange: '23/10 - 21/11',
+    element: 'Nước',
+    rulingPlanet: 'Sao Diêm Vương',
+    keywords: ['Sâu sắc', 'Kiên định', 'Chuyển hóa'],
+    strength: 'Đào sâu bản chất vấn đề và theo đuổi đến cùng.',
+    challenge: 'Khó buông bỏ khi đã đầu tư cảm xúc mạnh.',
+    advice: 'Dùng dữ kiện hiện tại để đánh giá thay vì ký ức cũ.',
+    color: 'hsl(338 85% 63%)',
+    imagePath: '/zodiac/scorpio.svg',
+    range: [1023, 1121],
+    constellation: {
+      latinName: 'Scorpius',
+      description: 'Hình cong dài như chiếc đuôi bọ cạp, nổi bật với Antares đỏ cam.',
+      stars: [
+        { id: 'dschubba', x: 20, y: 34, size: 2.4 },
+        { id: 'antares', x: 36, y: 50, size: 3.8 },
+        { id: 'acrux', x: 42, y: 62, size: 2.1 },
+        { id: 'sargas', x: 56, y: 58, size: 2.3 },
+        { id: 'jabbah', x: 68, y: 66, size: 2.0 },
+        { id: 'shaula', x: 79, y: 78, size: 2.6 },
+        { id: 'lesath', x: 89, y: 74, size: 2.1 },
+      ],
+      links: [
+        ['dschubba', 'antares'],
+        ['antares', 'acrux'],
+        ['antares', 'sargas'],
+        ['sargas', 'jabbah'],
+        ['jabbah', 'shaula'],
+        ['shaula', 'lesath'],
+      ],
+    },
+  },
+  {
+    id: 'sagittarius',
+    name: 'Nhân Mã',
+    symbol: '♐',
+    dateRange: '22/11 - 21/12',
+    element: 'Lửa',
+    rulingPlanet: 'Sao Mộc',
+    keywords: ['Tự do', 'Khám phá', 'Lạc quan'],
+    strength: 'Mở rộng tầm nhìn và thích nghi nhanh với bối cảnh mới.',
+    challenge: 'Dễ bỏ ngang nếu thiếu cảm hứng tức thời.',
+    advice: 'Chia mục tiêu lớn thành chặng ngắn để giữ đà.',
+    color: 'hsl(29 91% 63%)',
+    imagePath: '/zodiac/sagittarius.svg',
+    range: [1122, 1221],
+    constellation: {
+      latinName: 'Sagittarius',
+      description: 'Cụm “teapot” nổi tiếng, biểu trưng chiếc cung đang giương bắn.',
+      stars: [
+        { id: 'kaus-borealis', x: 24, y: 46, size: 2.2 },
+        { id: 'nunki', x: 39, y: 36, size: 2.8 },
+        { id: 'phi-sgr', x: 49, y: 46, size: 2.0 },
+        { id: 'kaus-media', x: 58, y: 56, size: 2.4 },
+        { id: 'kaus-australis', x: 46, y: 70, size: 3.0 },
+        { id: 'ascella', x: 68, y: 64, size: 2.3 },
+        { id: 'alnasl', x: 82, y: 77, size: 2.2 },
+      ],
+      links: [
+        ['kaus-borealis', 'nunki'],
+        ['nunki', 'phi-sgr'],
+        ['phi-sgr', 'kaus-media'],
+        ['kaus-media', 'kaus-australis'],
+        ['kaus-australis', 'kaus-borealis'],
+        ['kaus-media', 'ascella'],
+        ['ascella', 'alnasl'],
+      ],
+    },
+  },
+  {
+    id: 'capricorn',
+    name: 'Ma Kết',
+    symbol: '♑',
+    dateRange: '22/12 - 19/01',
+    element: 'Đất',
+    rulingPlanet: 'Sao Thổ',
+    keywords: ['Bền bỉ', 'Trách nhiệm', 'Chiến lược'],
+    strength: 'Lập kế hoạch tốt và có năng lực triển khai dài hạn.',
+    challenge: 'Dễ cứng nhắc hoặc quá nghiêm khắc với chính mình.',
+    advice: 'Xen kẽ nhịp nghỉ để duy trì hiệu suất bền vững.',
+    color: 'hsl(213 24% 62%)',
+    imagePath: '/zodiac/capricorn.svg',
+    range: [1222, 119],
+    constellation: {
+      latinName: 'Capricornus',
+      description: 'Hình tam giác lệch nhẹ, tượng trưng sinh vật dê biển trong thần thoại.',
+      stars: [
+        { id: 'algiedi', x: 20, y: 64, size: 2.7 },
+        { id: 'dabih', x: 34, y: 50, size: 2.9 },
+        { id: 'nashira', x: 52, y: 44, size: 2.3 },
+        { id: 'deneb-algedi', x: 70, y: 58, size: 2.8 },
+        { id: 'omega-cap', x: 54, y: 70, size: 1.9 },
+        { id: 'iota-cap', x: 34, y: 76, size: 2.0 },
+      ],
+      links: [
+        ['algiedi', 'dabih'],
+        ['dabih', 'nashira'],
+        ['nashira', 'deneb-algedi'],
+        ['deneb-algedi', 'omega-cap'],
+        ['omega-cap', 'iota-cap'],
+        ['iota-cap', 'algiedi'],
+      ],
+    },
+  },
+  {
+    id: 'aquarius',
+    name: 'Bảo Bình',
+    symbol: '♒',
+    dateRange: '20/01 - 18/02',
+    element: 'Khí',
+    rulingPlanet: 'Sao Thiên Vương',
+    keywords: ['Đổi mới', 'Độc lập', 'Tư duy hệ thống'],
+    strength: 'Nhìn ra mô hình lớn và đề xuất giải pháp khác biệt.',
+    challenge: 'Đôi khi tách khỏi cảm xúc thực tế của tình huống.',
+    advice: 'Kết nối ý tưởng lớn với bước hành động nhỏ mỗi ngày.',
+    color: 'hsl(194 78% 66%)',
+    imagePath: '/zodiac/aquarius.svg',
+    range: [120, 218],
+    constellation: {
+      latinName: 'Aquarius',
+      description: 'Chuỗi sao uốn lượn như dòng nước chảy từ bình xuống đất.',
+      stars: [
+        { id: 'sadalmelik', x: 20, y: 42, size: 3.0 },
+        { id: 'sadalsuud', x: 36, y: 50, size: 2.9 },
+        { id: 'skat', x: 50, y: 60, size: 2.4 },
+        { id: 'albali', x: 63, y: 50, size: 2.1 },
+        { id: 'ancha', x: 74, y: 62, size: 2.0 },
+        { id: 'situla', x: 84, y: 74, size: 2.2 },
+      ],
+      links: [
+        ['sadalmelik', 'sadalsuud'],
+        ['sadalsuud', 'skat'],
+        ['skat', 'albali'],
+        ['albali', 'ancha'],
+        ['ancha', 'situla'],
+      ],
+    },
+  },
+  {
+    id: 'pisces',
+    name: 'Song Ngư',
+    symbol: '♓',
+    dateRange: '19/02 - 20/03',
+    element: 'Nước',
+    rulingPlanet: 'Sao Hải Vương',
+    keywords: ['Trực giác', 'Sáng tạo', 'Thấu cảm'],
+    strength: 'Nhạy với tín hiệu tinh tế và giàu tưởng tượng.',
+    challenge: 'Có thể mơ hồ mục tiêu nếu thiếu cấu trúc.',
+    advice: 'Viết 3 ưu tiên rõ ràng trước khi bắt đầu ngày mới.',
+    color: 'hsl(262 73% 68%)',
+    imagePath: '/zodiac/pisces.svg',
+    range: [219, 320],
+    constellation: {
+      latinName: 'Pisces',
+      description: 'Hai cụm sao nối bằng một đường dài, tượng trưng hai cá bơi ngược chiều.',
+      stars: [
+        { id: 'alpherg', x: 18, y: 38, size: 2.8 },
+        { id: 'eta-psc', x: 30, y: 50, size: 2.1 },
+        { id: 'gamma-psc', x: 42, y: 64, size: 2.0 },
+        { id: 'omega-psc', x: 56, y: 72, size: 1.9 },
+        { id: 'iota-psc', x: 66, y: 58, size: 2.0 },
+        { id: 'kappa-psc', x: 77, y: 46, size: 2.2 },
+        { id: 'fumalsamakah', x: 89, y: 34, size: 3.1 },
+      ],
+      links: [
+        ['alpherg', 'eta-psc'],
+        ['eta-psc', 'gamma-psc'],
+        ['gamma-psc', 'omega-psc'],
+        ['omega-psc', 'iota-psc'],
+        ['iota-psc', 'kappa-psc'],
+        ['kappa-psc', 'fumalsamakah'],
+      ],
+    },
+  },
+];
+
+export function getCurrentSignIdByDate(date: Date): string {
+  const mmdd = (date.getMonth() + 1) * 100 + date.getDate();
+  const matched = zodiacSigns.find((sign) => {
+    const [start, end] = sign.range;
+    if (start <= end) return mmdd >= start && mmdd <= end;
+    return mmdd >= start || mmdd <= end;
+  });
+  return matched?.id ?? zodiacSigns[0].id;
+}

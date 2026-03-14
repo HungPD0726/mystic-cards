@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import {
   Sparkles,
@@ -15,10 +16,16 @@ import {
   Clock3,
   Brain,
   Stars,
+  Sun,
 } from 'lucide-react';
 import { spreads } from '@/data/spreads';
 import BackgroundParticles from '@/components/BackgroundParticles';
 import QuickAccessCard from '@/components/QuickAccessCard';
+import { DailyTarotWidget } from '@/components/DailyTarotWidget';
+import { useAuth } from '@/features/auth/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { zodiacSigns } from '@/data/zodiac';
+import { Badge } from '@/components/ui/badge';
 
 const topics = [
   {
@@ -81,6 +88,25 @@ const strengths = [
 ];
 
 const Index = () => {
+  const { user, isAuthenticated } = useAuth();
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const fetchProfile = async () => {
+        const { data } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (data) setProfile(data);
+      };
+      fetchProfile();
+    }
+  }, [isAuthenticated, user]);
+
+  const userZodiac = profile?.zodiac_sign ? zodiacSigns.find(s => s.id === profile.zodiac_sign) : null;
+
   return (
     <div className="relative min-h-screen overflow-x-clip">
       <section className="relative isolate overflow-hidden border-b border-border/40">
@@ -129,6 +155,29 @@ const Index = () => {
               78 lá bài không nói trước tương lai, nhưng soi sáng lựa chọn hiện tại. Hãy bắt đầu với câu hỏi bạn đang
               thật sự băn khoăn.
             </motion.p>
+
+            <AnimatePresence>
+              {userZodiac && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="mt-8 inline-flex items-center gap-4 px-6 py-3 rounded-2xl bg-gold/5 border border-gold/20 backdrop-blur-sm shadow-lg shadow-gold/5"
+                >
+                  <div className="text-3xl">{userZodiac.symbol}</div>
+                  <div className="text-left">
+                    <p className="text-xs font-bold text-gold uppercase tracking-widest">Tử vi hàng ngày • {userZodiac.name}</p>
+                    <p className="text-sm text-foreground/90 max-w-xs line-clamp-1 italic">
+                      "{userZodiac.advice}"
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="icon" asChild className="text-gold hover:bg-gold/10">
+                    <Link to="/zodiac">
+                      <ChevronRight className="w-5 h-5" />
+                    </Link>
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -232,6 +281,12 @@ const Index = () => {
               </div>
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      <section className="container mx-auto px-4 -mt-12 mb-16 relative z-20">
+        <div className="max-w-4xl mx-auto">
+          <DailyTarotWidget />
         </div>
       </section>
 
