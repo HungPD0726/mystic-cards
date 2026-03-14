@@ -27,10 +27,23 @@ Deploy the edge function:
 npx supabase functions deploy tarot-interpret --no-verify-jwt
 ```
 
-Set the edge function secret:
+Set the edge function secret. `GOOGLE_API_KEY` is the recommended option:
+
+```bash
+npx supabase secrets set GOOGLE_API_KEY=<your-google-ai-api-key>
+```
+
+Legacy fallback if you still use Lovable AI Gateway:
 
 ```bash
 npx supabase secrets set LOVABLE_API_KEY=<your-lovable-api-key>
+```
+
+Optional model overrides:
+
+```bash
+npx supabase secrets set GEMINI_MODEL=gemini-2.5-flash
+npx supabase secrets set LOVABLE_MODEL=google/gemini-2.5-flash
 ```
 
 Configure Supabase Auth:
@@ -107,8 +120,9 @@ Optional frontend env vars:
 
 - `VITE_BASE_PATH=/` for root hosting
 - `VITE_BASE_PATH=/mystic-cards/` for GitHub Pages repo hosting
-- `VITE_GOOGLE_API_KEY` for direct Gemini fallback if the edge function fails
-- `VITE_GEMINI_MODEL`
+
+Do not put AI provider secrets in frontend env vars. The app now calls the
+Supabase edge function only, and provider keys must stay in Supabase secrets.
 
 Build command:
 
@@ -128,7 +142,6 @@ If you use the existing GitHub Actions workflow, add these repository secrets:
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
 - `VITE_API_BASE_URL`
-- `VITE_GOOGLE_API_KEY` if you want the browser-side Gemini fallback
 
 Also make sure GitHub Pages is configured to deploy from `GitHub Actions`.
 
