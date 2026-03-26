@@ -16,6 +16,12 @@ export interface ChatApiMessage {
   content: string;
 }
 
+export interface ChatReadingContext {
+  spreadName: string;
+  interpretation: string;
+  drawnCards: DrawnCardForAI[];
+}
+
 function extractErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message) {
     return error.message;
@@ -141,12 +147,16 @@ export async function generateTarotInterpretationAI(
   }
 }
 
-export async function generateTarotChatReplyAI(messages: ChatApiMessage[]): Promise<string> {
+export async function generateTarotChatReplyAI(
+  messages: ChatApiMessage[],
+  readingContext?: ChatReadingContext,
+): Promise<string> {
   try {
     return await invokeTarotFunction(
       {
         mode: 'chat',
         messages,
+        readingContext,
       },
       'reply',
       'Edge function returned empty reply',

@@ -58,6 +58,7 @@ export interface ReadingHistory {
   date: string;
   spreadType: SpreadType;
   spreadName: string;
+  aiInterpretation?: string | null;
   drawnCards: {
     cardId: number;
     cardName: string;

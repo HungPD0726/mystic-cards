@@ -1,17 +1,18 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Loader2, RotateCcw, Save, Share2, Sparkles, Stars, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { saveReadingHistory } from '@/hooks/useTarotReading';
+import { upsertReadingHistory } from '@/hooks/useTarotReading';
 import { supabase } from '@/integrations/supabase/client';
 import { generateTarotInterpretation } from '@/lib/geminiService';
 import {
   buildReadingShareText,
   consumeAutoAI,
   loadCurrentReading,
+  saveCurrentReading,
   StoredReading,
 } from '@/lib/readingSession';
 import { cn } from '@/lib/utils';
@@ -19,28 +20,145 @@ import { useAuth } from '@/features/auth/context/AuthContext';
 import { publicAsset } from '@/lib/publicAsset';
 import { TarotChat } from '@/components/TarotChat';
 
+type SavedReadingTarget =
+  | {
+      storage: 'cloud';
+      id: string;
+    }
+  | {
+      storage: 'local';
+      id: string;
+    };
+
 const ReadingResult = () => {
   const { spread: spreadId } = useParams<{ spread: string }>();
   const { isAuthenticated, user } = useAuth();
   const [reading, setReading] = useState<StoredReading | null>(null);
   const [aiInterpretation, setAiInterpretation] = useState('');
   const [isLoadingAI, setIsLoadingAI] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
+  const [savedReadingTarget, setSavedReadingTarget] = useState<SavedReadingTarget | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSyncingSavedAI, setIsSyncingSavedAI] = useState(false);
+  const [needsAiResync, setNeedsAiResync] = useState(false);
   const placeholderSrc = publicAsset('placeholder.svg');
+  const readingRef = useRef<StoredReading | null>(null);
+  const aiInterpretationRef = useRef('');
+  const savedReadingTargetRef = useRef<SavedReadingTarget | null>(null);
 
-  const generateAIInterpretation = useCallback(async (readingData: StoredReading) => {
-    setIsLoadingAI(true);
-    try {
-      const interpretation = await generateTarotInterpretation(readingData.drawnCards, readingData.spreadName);
-      setAiInterpretation(interpretation);
-    } catch (error: unknown) {
-      console.error('AI interpretation error:', error);
-      const message = error instanceof Error ? error.message : 'Không thể kết nối AI. Vui lòng thử lại.';
-      toast.error(message);
-    } finally {
-      setIsLoadingAI(false);
-    }
+  const persistReading = useCallback((nextReading: StoredReading) => {
+    readingRef.current = nextReading;
+    aiInterpretationRef.current = nextReading.aiInterpretation ?? '';
+    setReading(nextReading);
+    setAiInterpretation(nextReading.aiInterpretation ?? '');
+    saveCurrentReading(nextReading);
   }, []);
+
+  const setSavedTarget = useCallback((nextTarget: SavedReadingTarget | null) => {
+    savedReadingTargetRef.current = nextTarget;
+    setSavedReadingTarget(nextTarget);
+  }, []);
+
+  const buildLocalHistoryEntry = useCallback(
+    (readingData: StoredReading, id: string, interpretation?: string | null) => ({
+      id,
+      date: readingData.createdAt,
+      spreadType: readingData.spreadType,
+      spreadName: readingData.spreadName,
+      aiInterpretation: interpretation ?? readingData.aiInterpretation ?? null,
+      drawnCards: readingData.drawnCards.map((card) => ({
+        cardId: card.cardId,
+        cardName: card.cardName,
+        orientation: card.orientation,
+        position: card.position,
+      })),
+    }),
+    [],
+  );
+
+  const syncSavedInterpretation = useCallback(
+    async (
+      target: SavedReadingTarget,
+      readingData: StoredReading,
+      interpretation: string,
+      options?: { silentSuccess?: boolean },
+    ) => {
+      if (!interpretation.trim()) {
+        return true;
+      }
+
+      setIsSyncingSavedAI(true);
+      try {
+        if (target.storage === 'cloud') {
+          if (!user) {
+            throw new Error('Missing authenticated user for cloud sync.');
+          }
+
+          const { error } = await supabase
+            .from('readings')
+            .update({ ai_interpretation: interpretation })
+            .eq('id', target.id)
+            .eq('user_id', user.id);
+
+          if (error) {
+            throw error;
+          }
+        } else {
+          upsertReadingHistory(buildLocalHistoryEntry(readingData, target.id, interpretation));
+        }
+
+        setNeedsAiResync(false);
+
+        if (!options?.silentSuccess) {
+          toast.success(
+            target.storage === 'cloud'
+              ? 'Đã cập nhật luận giải AI lên cloud.'
+              : 'Đã cập nhật luận giải AI trong lịch sử cục bộ.',
+          );
+        }
+
+        return true;
+      } catch (error) {
+        console.error('AI interpretation sync error:', error);
+        setNeedsAiResync(true);
+        toast.error(
+          target.storage === 'cloud'
+            ? 'Đã lưu trải bài nhưng chưa đồng bộ được luận giải AI lên cloud. Bạn có thể lưu lại sau.'
+            : 'Đã lưu trải bài nhưng chưa cập nhật được luận giải AI vào lịch sử cục bộ. Bạn có thể lưu lại sau.',
+        );
+        return false;
+      } finally {
+        setIsSyncingSavedAI(false);
+      }
+    },
+    [buildLocalHistoryEntry, user],
+  );
+
+  const generateAIInterpretation = useCallback(
+    async (readingData: StoredReading) => {
+      setIsLoadingAI(true);
+      try {
+        const interpretation = await generateTarotInterpretation(readingData.drawnCards, readingData.spreadName);
+        const nextReading: StoredReading = {
+          ...readingData,
+          aiInterpretation: interpretation,
+        };
+
+        persistReading(nextReading);
+
+        const currentTarget = savedReadingTargetRef.current;
+        if (currentTarget) {
+          await syncSavedInterpretation(currentTarget, nextReading, interpretation, { silentSuccess: true });
+        }
+      } catch (error: unknown) {
+        console.error('AI interpretation error:', error);
+        const message = error instanceof Error ? error.message : 'Không thể kết nối AI. Vui lòng thử lại.';
+        toast.error(message);
+      } finally {
+        setIsLoadingAI(false);
+      }
+    },
+    [persistReading, syncSavedInterpretation],
+  );
 
   useEffect(() => {
     const storedReading = loadCurrentReading();
@@ -48,52 +166,104 @@ const ReadingResult = () => {
       return;
     }
 
+    readingRef.current = storedReading;
+    aiInterpretationRef.current = storedReading.aiInterpretation ?? '';
     setReading(storedReading);
+    setAiInterpretation(storedReading.aiInterpretation ?? '');
 
     if (consumeAutoAI()) {
-      generateAIInterpretation(storedReading);
+      void generateAIInterpretation(storedReading);
     }
   }, [generateAIInterpretation]);
 
   const handleSave = async () => {
-    if (!reading) return;
-
-    if (isAuthenticated && user) {
-      try {
-        const { error } = await supabase.from('readings').insert({
-          user_id: user.id,
-          spread_type: reading.spreadType,
-          spread_name: reading.spreadName,
-          drawn_cards: reading.drawnCards as never,
-          ai_interpretation: aiInterpretation || null,
-        });
-
-        if (error) throw error;
-
-        setIsSaved(true);
-        toast.success('Đã lưu trải bài vào tài khoản của bạn.');
-      } catch (error) {
-        console.error(error);
-        toast.error('Lưu cloud thất bại. Vui lòng thử lại.');
-      }
+    if (!reading) {
       return;
     }
 
-    saveReadingHistory({
-      id: Date.now().toString(),
-      date: reading.createdAt,
-      spreadType: reading.spreadType,
-      spreadName: reading.spreadName,
-      drawnCards: reading.drawnCards.map((card) => ({
-        cardId: card.cardId,
-        cardName: card.cardName,
-        orientation: card.orientation,
-        position: card.position,
-      })),
-    });
+    if (savedReadingTarget && needsAiResync && aiInterpretation.trim()) {
+      await syncSavedInterpretation(savedReadingTarget, reading, aiInterpretation, { silentSuccess: false });
+      return;
+    }
 
-    setIsSaved(true);
-    toast.success('Đã lưu vào lịch sử cục bộ. Đăng nhập để đồng bộ cloud.');
+    if (savedReadingTarget) {
+      return;
+    }
+
+    setIsSaving(true);
+    const interpretation = aiInterpretation.trim() ? aiInterpretation.trim() : null;
+
+    try {
+      if (isAuthenticated && user) {
+        const { data, error } = await supabase
+          .from('readings')
+          .insert({
+            user_id: user.id,
+            spread_type: reading.spreadType,
+            spread_name: reading.spreadName,
+            drawn_cards: reading.drawnCards as never,
+            ai_interpretation: interpretation,
+          })
+          .select('id')
+          .single();
+
+        if (error || !data?.id) {
+          throw error ?? new Error('Cloud save returned no id.');
+        }
+
+        const target: SavedReadingTarget = {
+          storage: 'cloud',
+          id: data.id,
+        };
+
+        setSavedTarget(target);
+        setNeedsAiResync(false);
+        toast.success('Đã lưu trải bài vào tài khoản của bạn.');
+
+        if (!interpretation) {
+          const latestInterpretation = aiInterpretationRef.current.trim();
+          const latestReading = readingRef.current;
+
+          if (latestInterpretation && latestReading) {
+            await syncSavedInterpretation(target, latestReading, latestInterpretation, { silentSuccess: true });
+          }
+        }
+
+        return;
+      }
+
+      const localId =
+        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : Date.now().toString();
+
+      upsertReadingHistory(buildLocalHistoryEntry(reading, localId, interpretation));
+
+      const target: SavedReadingTarget = {
+        storage: 'local',
+        id: localId,
+      };
+
+      setSavedTarget(target);
+      setNeedsAiResync(false);
+      toast.success('Đã lưu vào lịch sử cục bộ. Đăng nhập để đồng bộ cloud.');
+
+      if (!interpretation) {
+        const latestInterpretation = aiInterpretationRef.current.trim();
+        const latestReading = readingRef.current;
+
+        if (latestInterpretation && latestReading) {
+          await syncSavedInterpretation(target, latestReading, latestInterpretation, { silentSuccess: true });
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        isAuthenticated && user ? 'Lưu cloud thất bại. Vui lòng thử lại.' : 'Lưu lịch sử thất bại. Vui lòng thử lại.',
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleShare = async () => {
@@ -136,6 +306,16 @@ const ReadingResult = () => {
 
   const uprightCount = reading.drawnCards.filter((card) => card.orientation === 'upright').length;
   const reversedCount = reading.drawnCards.length - uprightCount;
+  const saveButtonLabel = isSaving
+    ? 'Đang lưu...'
+    : isSyncingSavedAI
+      ? 'Đang đồng bộ AI...'
+      : needsAiResync
+        ? 'Lưu lại luận giải AI'
+        : savedReadingTarget
+          ? 'Đã lưu'
+          : 'Lưu lịch sử';
+  const saveButtonDisabled = isSaving || isSyncingSavedAI || (savedReadingTarget !== null && !needsAiResync);
 
   return (
     <div className="relative min-h-screen overflow-x-clip">
@@ -316,9 +496,9 @@ const ReadingResult = () => {
           transition={{ delay: 0.26 }}
           className="mx-auto mt-8 flex max-w-5xl flex-wrap justify-center gap-3 rounded-2xl border border-border/60 bg-card/45 p-4"
         >
-          <Button onClick={handleSave} disabled={isSaved} className="gap-2 glow-gold">
+          <Button onClick={handleSave} disabled={saveButtonDisabled} className="gap-2 glow-gold">
             <Save className="h-4 w-4" />
-            {isSaved ? 'Đã lưu' : 'Lưu lịch sử'}
+            {saveButtonLabel}
           </Button>
           <Button onClick={handleShare} variant="outline" className="gap-2 border-gold/30 text-gold hover:bg-secondary">
             <Share2 className="h-4 w-4" />
@@ -353,10 +533,10 @@ const ReadingResult = () => {
         )}
 
         {aiInterpretation && (
-          <TarotChat 
-            drawnCards={reading.drawnCards} 
-            spreadName={reading.spreadName} 
-            initialInterpretation={aiInterpretation} 
+          <TarotChat
+            drawnCards={reading.drawnCards}
+            spreadName={reading.spreadName}
+            initialInterpretation={aiInterpretation}
           />
         )}
       </div>

@@ -1,9 +1,9 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, Mail, Calendar, BookOpen, Save, Sparkles, LogOut, 
-  Heart, History, Settings, ChevronRight, Star, Clock, Info, Camera
+  Heart, History, Settings, ChevronRight, Star, Clock, Info
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -20,16 +20,13 @@ import { allCards } from '@/data/cards';
 const Profile = () => {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Profile state
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [zodiacSign, setZodiacSign] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState('');
   const [saving, setSaving] = useState(false);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   
   // Stats & Data state
   const [readingCount, setReadingCount] = useState(0);
@@ -57,12 +54,10 @@ const Profile = () => {
           setBio(data.bio || '');
           setBirthDate(data.birth_date || '');
           setZodiacSign(data.zodiac_sign || '');
-          setAvatarUrl(data.avatar_url || user.user_metadata?.avatar_url || '');
         } else {
           // Initialize from auth metadata if profile doesn't exist
           setDisplayName((user.user_metadata?.display_name as string) || (user.user_metadata?.full_name as string) || '');
           setBio((user.user_metadata?.bio as string) || '');
-          setAvatarUrl(user.user_metadata?.avatar_url || '');
         }
       } catch (error) {
         console.error('Fetch profile failed:', error);
@@ -140,55 +135,6 @@ const Profile = () => {
     }
   }, [birthDate]);
 
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      setUploadingAvatar(true);
-      if (!event.target.files || event.target.files.length === 0) {
-        throw new Error('Bạn phải chọn một ảnh để tải lên.');
-      }
-
-      const file = event.target.files[0];
-       const fileExt = file.name.split('.').pop();
-       const filePath = `${user?.id}/${Math.random()}.${fileExt}`;
- 
-       // Upload file to Supabase Storage
-      const { error: uploadError, data } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      setAvatarUrl(publicUrl);
-
-      // Update profile in DB
-      const { error: updateError } = await supabase
-        .from('user_profiles')
-        .upsert({
-          user_id: user?.id,
-          avatar_url: publicUrl,
-          updated_at: new Date().toISOString(),
-        });
-
-      if (updateError) throw updateError;
-
-      // Update auth metadata
-      await supabase.auth.updateUser({
-        data: { avatar_url: publicUrl },
-      });
-
-      toast.success('Đã cập nhật ảnh đại diện thành công.');
-    } catch (error: any) {
-      toast.error(error.message || 'Không thể tải ảnh lên.');
-    } finally {
-      setUploadingAvatar(false);
-    }
-  };
-
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -203,7 +149,6 @@ const Profile = () => {
           bio: bio.trim(),
           birth_date: birthDate || null,
           zodiac_sign: zodiacSign || null,
-          avatar_url: avatarUrl,
           updated_at: new Date().toISOString(),
         });
         
@@ -211,11 +156,7 @@ const Profile = () => {
       
       // Also update auth metadata for consistency
       await supabase.auth.updateUser({
-        data: { 
-          display_name: displayName.trim(), 
-          bio: bio.trim(),
-          avatar_url: avatarUrl
-        },
+        data: { display_name: displayName.trim(), bio: bio.trim() },
       });
       
       toast.success('Đã cập nhật hồ sơ thành công.');
@@ -291,35 +232,15 @@ const Profile = () => {
           <div className="px-8 pb-8 -mt-12 relative">
             <div className="flex flex-col md:flex-row items-center md:items-end gap-6">
               <div className="relative group">
-                <Avatar className="w-32 h-32 border-4 border-card shadow-2xl ring-2 ring-gold/20 overflow-hidden bg-background">
-                  {avatarUrl ? (
-                    <AvatarImage src={avatarUrl} className="object-cover w-full h-full" />
-                  ) : null}
+                <Avatar className="w-32 h-32 border-4 border-card shadow-2xl ring-2 ring-gold/20">
+                  <AvatarImage src={user.user_metadata?.avatar_url} />
                   <AvatarFallback className="bg-gradient-to-br from-indigo-900 via-purple-900 to-gold/20 text-white text-3xl font-bold" style={{ fontFamily: 'Cinzel, serif' }}>
                     {initials}
                   </AvatarFallback>
                 </Avatar>
-                
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  className="hidden" 
-                  accept="image/*" 
-                  onChange={handleAvatarUpload}
-                  disabled={uploadingAvatar}
-                />
-                
-                <button 
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingAvatar}
-                  className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer disabled:cursor-not-allowed"
-                >
-                  {uploadingAvatar ? (
-                    <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <Camera className="w-8 h-8 text-white/80" />
-                  )}
-                </button>
+                <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                  <Settings className="w-8 h-8 text-white/80" />
+                </div>
               </div>
               
               <div className="flex-1 text-center md:text-left space-y-2">

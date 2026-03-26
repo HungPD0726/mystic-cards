@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { buildProviderError, ProviderMessage, ProviderResult, tryProviders } from "./providerUtils.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,40 +15,15 @@ type ChatInputMessage = {
   content: string;
 };
 
-type ProviderResult = {
-  data?: any;
-  error?: string;
-  status: number;
+type ChatReadingContext = {
+  spreadName?: string;
+  interpretation?: string;
+  drawnCards?: Array<{
+    cardName?: string;
+    orientation?: string;
+    position?: string;
+  }>;
 };
-
-function buildProviderError(provider: "Gemini" | "AI Gateway", status: number, bodyText: string): ProviderResult {
-  const loweredBody = bodyText.toLowerCase();
-
-  if (status === 429) {
-    return { error: "Qua nhieu yeu cau, vui long thu lai sau.", status: 429 };
-  }
-
-  if (status === 402) {
-    return { error: "Het luot AI, vui long nap them credits.", status: 402 };
-  }
-
-  if (status === 401) {
-    const secretName = provider === "Gemini" ? "GOOGLE_API_KEY" : "LOVABLE_API_KEY";
-    return {
-      error: `${secretName} credentials are invalid. Update the secret in Supabase.`,
-      status: 500,
-    };
-  }
-
-  if (status === 403 && loweredBody.includes("reported as leaked")) {
-    return {
-      error: "Google API key is blocked because it was reported as leaked. Rotate the key and store the new one in Supabase secrets as GOOGLE_API_KEY.",
-      status: 500,
-    };
-  }
-
-  return { error: `${provider} error: ${status}`, status: 500 };
-}
 
 function extractGeminiText(data: any): string {
   const candidates = Array.isArray(data?.candidates) ? data.candidates : [];
@@ -67,7 +43,7 @@ function extractGeminiText(data: any): string {
   return "";
 }
 
-async function callGemini(messages: Array<{ role: string; content: string }>): Promise<ProviderResult> {
+async function callGemini(messages: ProviderMessage[]): Promise<ProviderResult> {
   const apiKey = Deno.env.get("GOOGLE_API_KEY");
   if (!apiKey) {
     return { error: "GOOGLE_API_KEY is not configured", status: 500 };
@@ -123,7 +99,7 @@ async function callGemini(messages: Array<{ role: string; content: string }>): P
   return { data, status: 200 };
 }
 
-async function callAiGateway(messages: Array<{ role: string; content: string }>): Promise<ProviderResult> {
+async function callAiGateway(messages: ProviderMessage[]): Promise<ProviderResult> {
   const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
   if (!lovableApiKey) {
     return { error: "LOVABLE_API_KEY is not configured", status: 500 };
@@ -153,34 +129,13 @@ async function callAiGateway(messages: Array<{ role: string; content: string }>)
   return { data, status: 200 };
 }
 
-async function callAiProvider(messages: Array<{ role: string; content: string }>): Promise<ProviderResult> {
+async function callAiProvider(messages: ProviderMessage[]): Promise<ProviderResult> {
   const availableProviders = [
     Deno.env.get("GOOGLE_API_KEY") ? callGemini : null,
     Deno.env.get("LOVABLE_API_KEY") ? callAiGateway : null,
   ].filter((provider): provider is typeof callGemini => provider !== null);
 
-  if (availableProviders.length === 0) {
-    return {
-      error: "AI backend is not configured. Set GOOGLE_API_KEY or LOVABLE_API_KEY in Supabase secrets.",
-      status: 500,
-    };
-  }
-
-  const errors: string[] = [];
-
-  for (const provider of availableProviders) {
-    const result = await provider(messages);
-    if (!result.error) {
-      return result;
-    }
-
-    errors.push(result.error);
-  }
-
-  return {
-    error: errors.join(" | "),
-    status: 500,
-  };
+  return tryProviders(availableProviders, messages);
 }
 
 function extractGatewayText(data: any): string {
@@ -196,6 +151,54 @@ function extractProviderText(data: any): string {
   }
 
   return extractGatewayText(data);
+}
+
+function buildChatReadingContextPrompt(readingContext: ChatReadingContext | undefined): string {
+  if (!readingContext) {
+    return "";
+  }
+
+  const spreadName = typeof readingContext.spreadName === "string" ? readingContext.spreadName.trim() : "";
+  const interpretation = typeof readingContext.interpretation === "string" ? readingContext.interpretation.trim() : "";
+  const drawnCards = Array.isArray(readingContext.drawnCards)
+    ? readingContext.drawnCards
+        .map((card) => {
+          const position = typeof card?.position === "string" ? card.position.trim() : "";
+          const cardName = typeof card?.cardName === "string" ? card.cardName.trim() : "";
+          const orientation = card?.orientation === "upright" ? "Xuoi" : "Nguoc";
+
+          if (!position && !cardName) {
+            return "";
+          }
+
+          return `- ${position || "Khong ro vi tri"}: ${cardName || "Khong ro ten la"} (${orientation})`;
+        })
+        .filter(Boolean)
+    : [];
+
+  const sections: string[] = [];
+
+  if (spreadName) {
+    sections.push(`Trai bai hien tai: ${spreadName}`);
+  }
+
+  if (drawnCards.length > 0) {
+    sections.push(`Cac la bai:\n${drawnCards.join("\n")}`);
+  }
+
+  if (interpretation) {
+    sections.push(`Luan giai ban dau:\n${interpretation}`);
+  }
+
+  if (sections.length === 0) {
+    return "";
+  }
+
+  return (
+    "\nSu dung ngu canh Tarot sau de tra loi nhat quan voi trai bai hien tai. " +
+    "Khong can lap lai toan bo luan giai tru khi nguoi dung yeu cau.\n\n" +
+    sections.join("\n\n")
+  );
 }
 
 serve(async (req) => {
@@ -226,10 +229,12 @@ serve(async (req) => {
           content: message.content.trim(),
         }));
 
+      const readingContextPrompt = buildChatReadingContextPrompt(payload?.readingContext as ChatReadingContext | undefined);
       const systemPrompt =
         "Ban la tro ly Tarot thong thai, am ap va than thien. " +
         "Tra loi bang tieng Viet ngan gon, ro rang, huu ich. " +
-        "Neu nguoi dung hoi ve Tarot, hay dua ra giai thich va loi khuyen thuc te.";
+        "Neu nguoi dung hoi ve Tarot, hay dua ra giai thich va loi khuyen thuc te." +
+        readingContextPrompt;
 
       const result = await callAiProvider([
         { role: "system", content: systemPrompt },

@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { toast } from 'sonner';
+import { getReadingHistory } from '@/hooks/useTarotReading';
 
 interface DbReading {
   id: string;
@@ -55,12 +56,7 @@ const ReadingHistoryPage = () => {
   }, [user]);
 
   useEffect(() => {
-    try {
-      const data = localStorage.getItem('tarot-reading-history');
-      setLocalHistory(data ? JSON.parse(data) : []);
-    } catch {
-      setLocalHistory([]);
-    }
+    setLocalHistory(getReadingHistory());
 
     if (isAuthenticated) {
       loadDbReadings();
@@ -228,6 +224,9 @@ const ReadingHistoryPage = () => {
                         <span className="rounded bg-secondary/30 px-2 py-0.5 text-xs text-muted-foreground">
                           {spreadLabels[reading.spreadType]}
                         </span>
+                        {reading.aiInterpretation && (
+                          <span className="rounded bg-purple-500/20 px-2 py-0.5 text-xs text-purple-300">AI</span>
+                        )}
                       </div>
                       <p className="mt-1 text-xs text-muted-foreground">{formatDate(reading.date)}</p>
                       <div className="mt-2 flex flex-wrap gap-1.5">
@@ -237,6 +236,9 @@ const ReadingHistoryPage = () => {
                           </span>
                         ))}
                       </div>
+                      {reading.aiInterpretation && (
+                        <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{reading.aiInterpretation}</p>
+                      )}
                     </div>
                     <Button
                       variant="ghost"

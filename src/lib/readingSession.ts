@@ -17,6 +17,7 @@ export interface StoredReading {
   spreadType: SpreadType;
   spreadName: string;
   createdAt: string;
+  aiInterpretation?: string | null;
   drawnCards: StoredReadingCard[];
 }
 
@@ -32,6 +33,7 @@ export function createStoredReading(
     spreadType,
     spreadName,
     createdAt: new Date().toISOString(),
+    aiInterpretation: null,
     drawnCards: drawnCards.map((drawnCard) => ({
       cardId: drawnCard.card.id,
       cardName: drawnCard.card.name,
@@ -54,7 +56,15 @@ export function saveCurrentReading(reading: StoredReading) {
 export function loadCurrentReading(): StoredReading | null {
   try {
     const raw = sessionStorage.getItem(CURRENT_READING_KEY);
-    return raw ? (JSON.parse(raw) as StoredReading) : null;
+    if (!raw) {
+      return null;
+    }
+
+    const reading = JSON.parse(raw) as StoredReading;
+    return {
+      ...reading,
+      aiInterpretation: reading.aiInterpretation ?? null,
+    };
   } catch {
     return null;
   }
@@ -80,8 +90,9 @@ export function buildReadingShareText(reading: StoredReading, aiInterpretation?:
     .map((card) => `- ${card.position}: ${card.cardName} (${card.orientation === 'upright' ? 'Xuôi' : 'Ngược'})`)
     .join('\n');
 
-  const interpretation = aiInterpretation?.trim()
-    ? `\n\nLuận giải AI:\n${aiInterpretation.trim()}`
+  const interpretationText = aiInterpretation ?? reading.aiInterpretation ?? '';
+  const interpretation = interpretationText.trim()
+    ? `\n\nLuận giải AI:\n${interpretationText.trim()}`
     : '';
 
   return `Astral Arcana • ${reading.spreadName}\n${cardSummary}${interpretation}`;

@@ -113,17 +113,39 @@ export function useTarotReading(spreadType: SpreadType) {
 
 const HISTORY_KEY = 'tarot-reading-history';
 
-export function saveReadingHistory(reading: ReadingHistory) {
+function normalizeReadingHistoryEntry(reading: ReadingHistory): ReadingHistory {
+  return {
+    ...reading,
+    aiInterpretation: reading.aiInterpretation ?? null,
+  };
+}
+
+export function upsertReadingHistory(reading: ReadingHistory) {
+  const normalizedReading = normalizeReadingHistoryEntry(reading);
   const history = getReadingHistory();
-  history.unshift(reading);
-  if (history.length > 50) history.pop();
+  const existingIndex = history.findIndex((entry) => entry.id === normalizedReading.id);
+
+  if (existingIndex >= 0) {
+    history[existingIndex] = normalizedReading;
+  } else {
+    history.unshift(normalizedReading);
+    if (history.length > 50) {
+      history.pop();
+    }
+  }
+
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+}
+
+export function saveReadingHistory(reading: ReadingHistory) {
+  upsertReadingHistory(reading);
 }
 
 export function getReadingHistory(): ReadingHistory[] {
   try {
     const data = localStorage.getItem(HISTORY_KEY);
-    return data ? JSON.parse(data) : [];
+    const history = data ? (JSON.parse(data) as ReadingHistory[]) : [];
+    return history.map(normalizeReadingHistoryEntry);
   } catch {
     return [];
   }
