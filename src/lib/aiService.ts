@@ -19,6 +19,7 @@ export interface ChatApiMessage {
 export interface ChatReadingContext {
   spreadName: string;
   interpretation: string;
+  focusQuestion?: string | null;
   drawnCards: DrawnCardForAI[];
 }
 
@@ -75,21 +76,64 @@ async function readEdgeFunctionBody(error: unknown): Promise<string> {
   }
 }
 
+function buildAiCredentialsError(normalizedMessage: string): Error | null {
+  const mentionsGoogleCredentials =
+    normalizedMessage.includes('google_api_key') ||
+    normalizedMessage.includes('gemini error: 401') ||
+    (normalizedMessage.includes('gemini') && normalizedMessage.includes('credentials are invalid'));
+  const mentionsLovableCredentials =
+    normalizedMessage.includes('lovable_api_key') ||
+    normalizedMessage.includes('ai gateway error: 401') ||
+    (normalizedMessage.includes('ai gateway') && normalizedMessage.includes('credentials are invalid'));
+
+  if (mentionsGoogleCredentials && mentionsLovableCredentials) {
+    return new Error(
+      'Dich vu AI tren server dang bi tu choi xac thuc. Cap nhat GOOGLE_API_KEY hoac LOVABLE_API_KEY trong Supabase secrets.',
+    );
+  }
+
+  if (mentionsGoogleCredentials) {
+    return new Error('Dich vu AI tren server dang bi tu choi xac thuc. Cap nhat GOOGLE_API_KEY trong Supabase secrets.');
+  }
+
+  if (mentionsLovableCredentials) {
+    return new Error('Dich vu AI tren server dang bi tu choi xac thuc. Cap nhat LOVABLE_API_KEY trong Supabase secrets.');
+  }
+
+  if (
+    normalizedMessage.includes('not configured') ||
+    normalizedMessage.includes('credentials are invalid')
+  ) {
+    return new Error(
+      'Dich vu AI tren server chua duoc cau hinh dung. Cap nhat GOOGLE_API_KEY hoac LOVABLE_API_KEY trong Supabase secrets.',
+    );
+  }
+
+  return null;
+}
+
+function normalizeAiInterpretationText(text: string): string {
+  return text
+    .replace(/\bTONG QUAN NANG LUONG\b/g, 'TỔNG QUAN NĂNG LƯỢNG')
+    .replace(/\bPHAN TICH TUNG VI TRI\b/g, 'PHÂN TÍCH TỪNG LÁ BÀI')
+    .replace(/\bKET LUAN TUNG LA\b/g, 'KẾT LUẬN TỪNG LÁ')
+    .replace(/\bTONG KET CUOI CUNG\b/g, 'TỔNG KẾT CUỐI CÙNG')
+    .replace(/\bTHONG DIEP VA HANH DONG GOI Y\b/g, 'THÔNG ĐIỆP VÀ HÀNH ĐỘNG GỢI Ý')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/^#{1,6}\s*/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 async function buildAiError(error: unknown, action: string): Promise<Error> {
   const rawMessage = extractErrorMessage(error);
   const edgeMessage = await readEdgeFunctionBody(error);
   const message = edgeMessage || rawMessage;
   const normalized = message.toLowerCase();
 
-  if (
-    normalized.includes('google_api_key') ||
-    normalized.includes('lovable_api_key') ||
-    normalized.includes('not configured') ||
-    normalized.includes('credentials are invalid')
-  ) {
-    return new Error(
-      'Dich vu AI tren server chua duoc cau hinh dung. Cap nhat GOOGLE_API_KEY hoac LOVABLE_API_KEY trong Supabase secrets.',
-    );
+  const credentialsError = buildAiCredentialsError(normalized);
+  if (credentialsError) {
+    return credentialsError;
   }
 
   if (normalized.includes('reported as leaked') || normalized.includes('blocked because it was reported as leaked')) {
@@ -135,13 +179,16 @@ async function invokeTarotFunction(
 export async function generateTarotInterpretationAI(
   drawnCards: DrawnCardForAI[],
   spreadName: string,
+  focusQuestion?: string | null,
 ): Promise<string> {
   try {
-    return await invokeTarotFunction(
-      { drawnCards, spreadName },
+    const interpretation = await invokeTarotFunction(
+      { drawnCards, spreadName, focusQuestion },
       'interpretation',
       'Edge function returned empty interpretation',
     );
+
+    return normalizeAiInterpretationText(interpretation);
   } catch (error) {
     throw await buildAiError(error, 'tao luan giai AI');
   }

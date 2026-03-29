@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { DrawnCard, ReadingHistory } from '@/data/types';
 import { createStoredReading } from '@/lib/readingSession';
 import { getReadingHistory, upsertReadingHistory } from '@/hooks/useTarotReading';
+import {
+  buildStoredReadingFromHistoryEntry,
+  matchesReadingHistoryFilter,
+} from '@/lib/readingHistoryHelpers';
 
 const mockDrawnCards: DrawnCard[] = [
   {
@@ -31,9 +35,11 @@ function buildHistoryEntry(overrides?: Partial<ReadingHistory>): ReadingHistory 
     spreadType: storedReading.spreadType,
     spreadName: storedReading.spreadName,
     aiInterpretation: null,
+    notes: null,
     drawnCards: storedReading.drawnCards.map((card) => ({
       cardId: card.cardId,
       cardName: card.cardName,
+      cardSlug: card.cardSlug,
       orientation: card.orientation,
       position: card.position,
     })),
@@ -78,5 +84,99 @@ describe('reading history helpers', () => {
         aiInterpretation: null,
       }),
     ]);
+  });
+
+  it('normalizes missing notes from legacy local history data to null', () => {
+    const legacyEntry = buildHistoryEntry();
+    delete (legacyEntry as { notes?: string | null }).notes;
+
+    localStorage.setItem('tarot-reading-history', JSON.stringify([legacyEntry]));
+
+    expect(getReadingHistory()).toEqual([
+      expect.objectContaining({
+        id: 'local-reading-1',
+        notes: null,
+      }),
+    ]);
+  });
+
+  it('reconstructs a stored reading from history data for replay', () => {
+    const storedReading = buildStoredReadingFromHistoryEntry(
+      buildHistoryEntry({
+        notes: 'Mình cần tập trung điều gì ngay lúc này?',
+      }),
+    );
+
+    expect(storedReading).toEqual(
+      expect.objectContaining({
+        spreadType: 'one-card',
+        notes: 'Mình cần tập trung điều gì ngay lúc này?',
+        drawnCards: [
+          expect.objectContaining({
+            cardName: 'The Magician',
+            cardSlug: 'the-magician',
+          }),
+        ],
+      }),
+    );
+  });
+
+  it('matches history filters against spread, notes, AI text and card names', () => {
+    const entry = buildHistoryEntry({
+      spreadName: 'Một Lá',
+      notes: 'Tập trung cho công việc mới',
+      aiInterpretation: 'Bạn đang có đủ nguồn lực để bắt đầu.',
+    });
+
+    expect(
+      matchesReadingHistoryFilter(
+        {
+          spreadName: entry.spreadName,
+          notes: entry.notes,
+          aiInterpretation: entry.aiInterpretation,
+          date: entry.date,
+          drawnCards: entry.drawnCards,
+        },
+        {
+          query: 'công việc',
+          fromDate: '',
+          toDate: '',
+        },
+      ),
+    ).toBe(true);
+
+    expect(
+      matchesReadingHistoryFilter(
+        {
+          spreadName: entry.spreadName,
+          notes: entry.notes,
+          aiInterpretation: entry.aiInterpretation,
+          date: entry.date,
+          drawnCards: entry.drawnCards,
+        },
+        {
+          query: 'The Magician',
+          fromDate: '',
+          toDate: '',
+        },
+      ),
+    ).toBe(true);
+
+    expect(
+      matchesReadingHistoryFilter(
+        {
+          spreadName: entry.spreadName,
+          notes: entry.notes,
+          aiInterpretation: entry.aiInterpretation,
+          date: entry.date,
+          drawnCards: entry.drawnCards,
+        },
+        {
+          query: 'tình cảm',
+          fromDate: '',
+          toDate: '',
+        },
+      ),
+    ).toBe(false);
   });
 });

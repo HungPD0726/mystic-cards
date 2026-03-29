@@ -117,6 +117,7 @@ function normalizeReadingHistoryEntry(reading: ReadingHistory): ReadingHistory {
   return {
     ...reading,
     aiInterpretation: reading.aiInterpretation ?? null,
+    notes: reading.notes ?? null,
   };
 }
 

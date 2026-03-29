@@ -18,6 +18,7 @@ type ChatInputMessage = {
 type ChatReadingContext = {
   spreadName?: string;
   interpretation?: string;
+  focusQuestion?: string | null;
   drawnCards?: Array<{
     cardName?: string;
     orientation?: string;
@@ -68,8 +69,8 @@ async function callGemini(messages: ProviderMessage[]): Promise<ProviderResult> 
   const payload: Record<string, unknown> = {
     contents,
     generationConfig: {
-      temperature: 0.8,
-      maxOutputTokens: 1024,
+      temperature: 0.7,
+      maxOutputTokens: 1536,
     },
   };
 
@@ -153,6 +154,64 @@ function extractProviderText(data: any): string {
   return extractGatewayText(data);
 }
 
+function formatOrientation(orientation: unknown): string {
+  return orientation === "upright" ? "Xuôi" : "Ngược";
+}
+
+function buildInterpretationCardDescriptions(drawnCards: any[]): string {
+  return drawnCards
+    .map((card: any, index: number) => {
+      const position = typeof card?.position === "string" && card.position.trim() ? card.position.trim() : `Vị trí ${index + 1}`;
+      const cardName = typeof card?.cardName === "string" && card.cardName.trim() ? card.cardName.trim() : "Lá bài không rõ tên";
+      const cardMeaning = formatOrientation(card?.orientation) === "Xuôi" ? card?.uprightMeaning : card?.reversedMeaning;
+      const keywords = Array.isArray(card?.keywords) ? card.keywords.filter(Boolean).join(", ") : "";
+
+      return (
+        `- ${position}: ${cardName} (${formatOrientation(card?.orientation)})\n` +
+        `  Ý nghĩa cần bám sát: ${typeof cardMeaning === "string" ? cardMeaning : ""}\n` +
+        `  Từ khóa: ${keywords}`
+      );
+    })
+    .join("\n\n");
+}
+
+function buildInterpretationPrompt(spreadName: string, drawnCards: any[], focusQuestion: string): string {
+  const cardDescriptions = buildInterpretationCardDescriptions(drawnCards);
+  const requiredCardMentions = drawnCards
+    .map((card: any, index: number) => {
+      const position = typeof card?.position === "string" && card.position.trim() ? card.position.trim() : `Vị trí ${index + 1}`;
+      const cardName = typeof card?.cardName === "string" && card.cardName.trim() ? card.cardName.trim() : "Lá bài không rõ tên";
+      return `- ${position}: ${cardName}`;
+    })
+    .join("\n");
+
+  return (
+    `Hãy luận giải trải bài Tarot "${spreadName}" với dữ liệu sau:\n\n${cardDescriptions}\n\n` +
+    (focusQuestion ? `Câu hỏi tập trung của người dùng:\n"${focusQuestion}"\n\n` : "") +
+    "Yêu cầu bắt buộc:\n" +
+    "- Viết hoàn toàn bằng tiếng Việt có dấu tự nhiên, rõ ràng, không lỗi font.\n" +
+    "- Không mở đầu bằng lời chào xã giao.\n" +
+    "- Không dùng markdown, không dùng dấu **, không viết chung chung.\n" +
+    "- Phải phân tích hết tất cả các lá bài và nhắc rõ tên lá bài trong từng vị trí.\n" +
+    "- Sau phần phân tích của mỗi lá, phải có một dòng riêng bắt đầu bằng 'Kết luận cho lá này:'\n" +
+    "- Nếu là bài ngược, chỉ rõ điểm tắc, bài học cần điều chỉnh hoặc năng lượng đang bị cản trở.\n" +
+    "- Cuối cùng phải có một phần tổng kết chung cho toàn bộ trải bài.\n\n" +
+    "Hãy viết đúng cấu trúc sau:\n" +
+    "TỔNG QUAN NĂNG LƯỢNG\n" +
+    "2-3 câu tóm tắt mạch năng lượng chính của trải bài" +
+    (focusQuestion ? " và bám sát câu hỏi của người dùng.\n\n" : ".\n\n") +
+    "PHÂN TÍCH TỪNG LÁ BÀI\n" +
+    `Bắt buộc đi qua đầy đủ từng dòng sau:\n${requiredCardMentions}\n\n` +
+    "Với mỗi lá bài, viết theo mẫu:\n" +
+    "- [Vị trí] - [Tên lá bài]\n" +
+    "- Phân tích: 2-4 câu giải thích rõ vì sao lá bài xuất hiện ở vị trí này.\n" +
+    "- Kết luận cho lá này: 1-2 câu chốt lại thông điệp riêng của lá bài.\n\n" +
+    "TỔNG KẾT CUỐI CÙNG\n" +
+    "Tổng hợp toàn bộ trải bài thành một kết luận chung rõ ràng, rồi đưa ra 2-3 hướng hành động cụ thể.\n\n" +
+    "Độ dài mục tiêu: khoảng 350-550 từ."
+  );
+}
+
 function buildChatReadingContextPrompt(readingContext: ChatReadingContext | undefined): string {
   if (!readingContext) {
     return "";
@@ -160,6 +219,8 @@ function buildChatReadingContextPrompt(readingContext: ChatReadingContext | unde
 
   const spreadName = typeof readingContext.spreadName === "string" ? readingContext.spreadName.trim() : "";
   const interpretation = typeof readingContext.interpretation === "string" ? readingContext.interpretation.trim() : "";
+  const focusQuestion =
+    typeof readingContext.focusQuestion === "string" ? readingContext.focusQuestion.trim() : "";
   const drawnCards = Array.isArray(readingContext.drawnCards)
     ? readingContext.drawnCards
         .map((card) => {
@@ -184,6 +245,10 @@ function buildChatReadingContextPrompt(readingContext: ChatReadingContext | unde
 
   if (drawnCards.length > 0) {
     sections.push(`Cac la bai:\n${drawnCards.join("\n")}`);
+  }
+
+  if (focusQuestion) {
+    sections.push(`Cau hoi tap trung cua nguoi dung:\n${focusQuestion}`);
   }
 
   if (interpretation) {
@@ -256,6 +321,7 @@ serve(async (req) => {
     }
 
     const { drawnCards, spreadName } = payload;
+    const focusQuestion = typeof payload?.focusQuestion === "string" ? payload.focusQuestion.trim() : "";
     if (!Array.isArray(drawnCards) || !spreadName) {
       return new Response(
         JSON.stringify({ error: "drawnCards and spreadName are required." }),
@@ -263,26 +329,11 @@ serve(async (req) => {
       );
     }
 
-    const cardDescriptions = drawnCards
-      .map(
-        (card: any) =>
-          `- Vi tri "${card.position}": ${card.cardName} (${card.orientation === "upright" ? "Xuoi" : "Nguoc"})\n` +
-          `  Y nghia: ${card.orientation === "upright" ? card.uprightMeaning : card.reversedMeaning}\n` +
-          `  Tu khoa: ${card.keywords?.join(", ") ?? ""}`,
-      )
-      .join("\n\n");
-
     const systemPrompt =
-      "Ban la chuyen gia doc bai Tarot giau kinh nghiem voi bo bai Rider-Waite. " +
-      "Dien giai bang tieng Viet huyen bi nhung de hieu, ngan gon 3-4 doan, sau sac va thuc te.";
-
-    const userPrompt =
-      `Hay luan giai trai bai Tarot "${spreadName}" voi cac la bai sau:\n\n${cardDescriptions}\n\n` +
-      "Vui long:\n" +
-      "1. Phan tich tong the nang luong cua trai bai\n" +
-      "2. Dien giai y nghia tung la bai theo vi tri\n" +
-      "3. Dua ra thong diep tong hop va loi khuyen thiet thuc\n\n" +
-      "Viet bang tieng Viet, khoang 200-300 tu.";
+      "Bạn là chuyên gia đọc bài Tarot giàu kinh nghiệm với bộ bài Rider-Waite. " +
+      "Diễn giải bằng tiếng Việt có dấu, tự nhiên, sâu sắc và bám sát từng lá bài đã rút. " +
+      "Không được bỏ sót lá nào, mỗi lá phải có phần phân tích riêng và kết luận riêng, sau đó mới tổng kết toàn bộ trải bài.";
+    const userPrompt = buildInterpretationPrompt(spreadName, drawnCards, focusQuestion);
 
     const result = await callAiProvider([
       { role: "system", content: systemPrompt },

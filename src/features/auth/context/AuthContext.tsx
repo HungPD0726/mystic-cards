@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { api } from '@/lib/api';
 import type { User, Session } from '@supabase/supabase-js';
+import { buildAuthRedirectUrl, mapAuthError, syncBackendAuthSession } from './authHelpers';
 
 interface AuthContextType {
   user: User | null;
@@ -17,110 +18,73 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+type AuthProviderProps = {
+  children: ReactNode;
+};
+
+export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const lastSyncedAccessTokenRef = useRef<string | null>(null);
 
   const isAuthenticated = !!user && !!session;
 
-  const mapAuthError = (message: string) => {
-    const msg = message.toLowerCase();
-
-    if (msg.includes('invalid login credentials')) {
-      return 'Email hoac mat khau khong dung.';
-    }
-
-    if (msg.includes('email not confirmed')) {
-      return 'Tai khoan chua xac nhan email. Vui long kiem tra hop thu.';
-    }
-
-    if (msg.includes('user already registered')) {
-      return 'Email nay da dang ky.';
-    }
-
-    if (msg.includes('password should be at least')) {
-      return 'Mat khau phai co it nhat 6 ky tu.';
-    }
-
-    if (msg.includes('google oauth backend is not configured')) {
-      return 'Backend chua cau hinh GOOGLE_CLIENT_ID.';
-    }
-
-    if (msg.includes('google token audience mismatch')) {
-      return 'Sai cau hinh Google OAuth client. Kiem tra lai Client ID.';
-    }
-
-    if (msg.includes('provider is not enabled')) {
-      return 'Provider chua duoc bat trong Supabase.';
-    }
-
-    return message;
-  };
-
   const syncBackendAuth = useCallback(async (activeSession: Session) => {
-    const provider = activeSession.user?.app_metadata?.provider;
-    const username =
-      activeSession.user.user_metadata?.full_name || activeSession.user.user_metadata?.user_name;
-
-    if (provider === 'google' && activeSession.provider_token) {
-      const loginResult = await api.googleLogin({
-        accessToken: activeSession.provider_token,
-        username,
-      });
-      localStorage.setItem('token', loginResult.token);
-      return;
-    }
-
-    if (!activeSession.user.email) {
-      throw new Error('Tai khoan OAuth khong co email. Vui long cap quyen email trong provider.');
-    }
-
-    // Backward-compatible sync for non-Google sessions or missing provider token.
-    const syncResult = await api.googleSync({
-      email: activeSession.user.email!,
-      supabaseId: activeSession.user.id,
-      username,
-    });
-    localStorage.setItem('token', syncResult.token);
+    await syncBackendAuthSession(activeSession, api, localStorage);
   }, []);
 
+  const getRedirectTo = useCallback(
+    () => buildAuthRedirectUrl(import.meta.env.BASE_URL, window.location.origin),
+    [],
+  );
+
   useEffect(() => {
-    // Set up auth state listener BEFORE getting session
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    let isActive = true;
 
-      if (session?.user) {
-        try {
-          await syncBackendAuth(session);
-        } catch (err) {
-          console.error('Failed to sync with backend:', err);
-        }
-      } else {
+    const applySession = async (nextSession: Session | null, syncErrorLabel: string) => {
+      if (!isActive) return;
+
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+      const nextAccessToken = nextSession?.access_token ?? null;
+
+      if (!nextSession?.user) {
+        lastSyncedAccessTokenRef.current = null;
         localStorage.removeItem('token');
+        setIsLoading(false);
+        return;
       }
 
-      setIsLoading(false);
-    });
+      if (lastSyncedAccessTokenRef.current === nextAccessToken) {
+        setIsLoading(false);
+        return;
+      }
 
-    // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-
-      if (session?.user) {
-        try {
-          await syncBackendAuth(session);
-        } catch (err) {
-          console.error('Initial backend sync failed:', err);
+      try {
+        await syncBackendAuth(nextSession);
+        lastSyncedAccessTokenRef.current = nextAccessToken;
+      } catch (error) {
+        console.error(syncErrorLabel, error);
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
         }
       }
+    };
 
-      setIsLoading(false);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      void applySession(nextSession, 'Failed to sync with backend:');
     });
 
-    return () => subscription.unsubscribe();
+    void supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      return applySession(initialSession, 'Initial backend sync failed:');
+    });
+
+    return () => {
+      isActive = false;
+      subscription.unsubscribe();
+    };
   }, [syncBackendAuth]);
 
   const login = useCallback(async (email: string, password: string) => {
@@ -129,39 +93,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const register = useCallback(async (email: string, password: string) => {
-    const redirectTo = new URL(import.meta.env.BASE_URL || '/', window.location.origin).toString();
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: redirectTo },
+      options: { emailRedirectTo: getRedirectTo() },
     });
     if (error) throw new Error(mapAuthError(error.message));
 
     return { emailConfirmationRequired: !data.session };
-  }, []);
+  }, [getRedirectTo]);
 
   const loginWithGoogle = useCallback(async () => {
-    const redirectTo = new URL(import.meta.env.BASE_URL || '/', window.location.origin).toString();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo,
+        redirectTo: getRedirectTo(),
+        scopes: 'email profile openid',
       },
     });
     if (error) throw new Error(mapAuthError(error.message));
-  }, []);
+  }, [getRedirectTo]);
 
   const loginWithGithub = useCallback(async () => {
-    const redirectTo = new URL(import.meta.env.BASE_URL || '/', window.location.origin).toString();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
-        redirectTo,
+        redirectTo: getRedirectTo(),
         scopes: 'read:user user:email',
       },
     });
     if (error) throw new Error(mapAuthError(error.message));
-  }, []);
+  }, [getRedirectTo]);
 
   const logout = useCallback(async () => {
     await supabase.auth.signOut();

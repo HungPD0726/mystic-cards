@@ -18,7 +18,6 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { publicAsset } from '@/lib/publicAsset';
-import { TarotChat } from '@/components/TarotChat';
 
 type SavedReadingTarget =
   | {
@@ -29,6 +28,26 @@ type SavedReadingTarget =
       storage: 'local';
       id: string;
     };
+
+type ResultReadingCard = StoredReading['drawnCards'][number];
+
+function buildCardPositionInsight(card: ResultReadingCard) {
+  const positionLabel = card.position.toLowerCase();
+
+  if (card.orientation === 'upright') {
+    return `${card.cardName} đang mở ra một hướng năng lượng hỗ trợ ở vị trí ${positionLabel}. Đây là điểm bạn có thể tin vào và khai thác mạnh hơn.`;
+  }
+
+  return `${card.cardName} xuất hiện ngược ở vị trí ${positionLabel}, cho thấy nút thắt hoặc bài học bạn cần chạm vào thay vì né tránh.`;
+}
+
+function buildCardConclusion(card: ResultReadingCard) {
+  if (card.orientation === 'upright') {
+    return `Kết luận cho lá này: ${card.cardName} nghiêng về mặt tích cực và cho thấy bạn đang có một điểm tựa rõ ràng ở ${card.position.toLowerCase()}.`;
+  }
+
+  return `Kết luận cho lá này: ${card.cardName} là lời nhắc rằng ở ${card.position.toLowerCase()} vẫn còn điều cần điều chỉnh, chữa lành hoặc nhìn lại kỹ hơn.`;
+}
 
 const ReadingResult = () => {
   const { spread: spreadId } = useParams<{ spread: string }>();
@@ -65,9 +84,11 @@ const ReadingResult = () => {
       spreadType: readingData.spreadType,
       spreadName: readingData.spreadName,
       aiInterpretation: interpretation ?? readingData.aiInterpretation ?? null,
+      notes: readingData.notes ?? null,
       drawnCards: readingData.drawnCards.map((card) => ({
         cardId: card.cardId,
         cardName: card.cardName,
+        cardSlug: card.cardSlug,
         orientation: card.orientation,
         position: card.position,
       })),
@@ -137,7 +158,11 @@ const ReadingResult = () => {
     async (readingData: StoredReading) => {
       setIsLoadingAI(true);
       try {
-        const interpretation = await generateTarotInterpretation(readingData.drawnCards, readingData.spreadName);
+        const interpretation = await generateTarotInterpretation(
+          readingData.drawnCards,
+          readingData.spreadName,
+          readingData.notes ?? null,
+        );
         const nextReading: StoredReading = {
           ...readingData,
           aiInterpretation: interpretation,
@@ -203,6 +228,7 @@ const ReadingResult = () => {
             spread_name: reading.spreadName,
             drawn_cards: reading.drawnCards as never,
             ai_interpretation: interpretation,
+            notes: reading.notes ?? null,
           })
           .select('id')
           .single();
@@ -337,6 +363,14 @@ const ReadingResult = () => {
                 Kết quả trải bài
               </h1>
               <p className="mt-2 text-muted-foreground">{reading.spreadName}</p>
+              {reading.notes?.trim() && (
+                <div className="mt-4 rounded-2xl border border-gold/20 bg-gold/5 px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-gold/80">Câu hỏi tập trung</p>
+                  <p className="mt-2 text-sm leading-relaxed text-foreground/90">
+                    "{reading.notes.trim()}"
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
@@ -416,13 +450,13 @@ const ReadingResult = () => {
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="flex items-center gap-2 text-xl font-bold text-gold md:text-2xl" style={{ fontFamily: 'Cinzel, serif' }}>
               <Sparkles className="h-5 w-5" />
-              Luận giải bằng AI
+              Phân tích cuối cùng từ AI
             </h2>
 
-            {!aiInterpretation && !isLoadingAI && (
+            {!isLoadingAI && (
               <Button size="sm" onClick={() => generateAIInterpretation(reading)} className="gap-2 glow-gold">
                 <Sparkles className="h-4 w-4" />
-                Tạo luận giải
+                {aiInterpretation ? 'Tạo lại tổng kết cuối cùng' : 'Tạo tổng kết cuối cùng'}
               </Button>
             )}
           </div>
@@ -430,7 +464,7 @@ const ReadingResult = () => {
           {isLoadingAI && (
             <div className="flex items-center gap-3 py-4 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
-              <span className="text-sm">AI đang phân tích mạch năng lượng của trải bài này...</span>
+              <span className="text-sm">AI đang tổng hợp toàn bộ trải bài và đưa ra kết luận cuối cùng...</span>
             </div>
           )}
 
@@ -446,7 +480,7 @@ const ReadingResult = () => {
 
           {!aiInterpretation && !isLoadingAI && (
             <p className="rounded-2xl border border-border/60 bg-background/45 p-4 text-sm text-muted-foreground">
-              Tạo luận giải để AI tổng hợp các lá bài, mạch cảm xúc và gợi ý hành động thành một bản đọc liền mạch.
+              Tạo phần tổng kết cuối cùng để AI nối các lá bài lại thành một kết luận chung rõ ràng và thực tế.
             </p>
           )}
         </motion.div>
@@ -459,7 +493,7 @@ const ReadingResult = () => {
         >
           <h2 className="mb-4 flex items-center gap-2 text-xl font-bold text-gold md:text-2xl" style={{ fontFamily: 'Cinzel, serif' }}>
             <BarChart3 className="h-5 w-5" />
-            Tóm tắt theo từng vị trí
+            Phân tích từng lá bài
           </h2>
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -485,6 +519,16 @@ const ReadingResult = () => {
                 <p className="mt-3 text-sm leading-relaxed text-foreground/90">
                   {card.orientation === 'upright' ? card.uprightMeaning : card.reversedMeaning}
                 </p>
+
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{card.description}</p>
+
+                <div className="mt-3 rounded-xl border border-gold/15 bg-gold/5 px-3 py-2">
+                  <p className="text-sm leading-relaxed text-foreground/90">{buildCardPositionInsight(card)}</p>
+                </div>
+
+                <div className="mt-3 rounded-xl border border-border/60 bg-background/60 px-3 py-2">
+                  <p className="text-sm leading-relaxed text-foreground/90">{buildCardConclusion(card)}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -530,14 +574,6 @@ const ReadingResult = () => {
             </Link>{' '}
             để lưu lịch sử lên cloud và đồng bộ luận giải AI giữa các thiết bị.
           </motion.p>
-        )}
-
-        {aiInterpretation && (
-          <TarotChat
-            drawnCards={reading.drawnCards}
-            spreadName={reading.spreadName}
-            initialInterpretation={aiInterpretation}
-          />
         )}
       </div>
     </div>

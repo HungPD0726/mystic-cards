@@ -59,9 +59,11 @@ export interface ReadingHistory {
   spreadType: SpreadType;
   spreadName: string;
   aiInterpretation?: string | null;
+  notes?: string | null;
   drawnCards: {
     cardId: number;
     cardName: string;
+    cardSlug?: string;
     orientation: Orientation;
     position: string;
   }[];

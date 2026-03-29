@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Sparkles, User, Bot, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { ChatApiMessage } from '@/lib/aiService';
+import type { ChatApiMessage, ChatReadingContext } from '@/lib/aiService';
+import { loadCurrentReading } from '@/lib/readingSession';
 
 interface Message {
   role: 'user' | 'model';
@@ -23,6 +24,48 @@ function loadAiService() {
   return aiServiceModulePromise;
 }
 
+function buildInitialMessage(): Message {
+  const reading = loadCurrentReading();
+
+  if (!reading || reading.drawnCards.length === 0) {
+    return INITIAL_MESSAGE;
+  }
+
+  const cardPreview = reading.drawnCards
+    .slice(0, 3)
+    .map((card) => `${card.cardName} (${card.position})`)
+    .join(', ');
+
+  return {
+    role: 'model',
+    text:
+      `MÃ¬nh Ä‘ang nhÃ¬n tháº¥y tráº£i bÃ i "${reading.spreadName}" gáº§n nháº¥t cá»§a báº¡n. ` +
+      `Báº¡n cÃ³ thá»ƒ há»i sÃ¢u hÆ¡n vá» ${cardPreview} hoáº·c xin káº¿t ná»‘i Ã½ nghÄ©a giá»¯a cÃ¡c lÃ¡ bÃ i.`,
+  };
+}
+
+function buildCurrentReadingContext(): ChatReadingContext | undefined {
+  const reading = loadCurrentReading();
+
+  if (!reading || reading.drawnCards.length === 0) {
+    return undefined;
+  }
+
+  return {
+    spreadName: reading.spreadName,
+    interpretation: reading.aiInterpretation ?? '',
+    focusQuestion: reading.notes ?? null,
+    drawnCards: reading.drawnCards.map((card) => ({
+      cardName: card.cardName,
+      orientation: card.orientation,
+      position: card.position,
+      uprightMeaning: card.uprightMeaning,
+      reversedMeaning: card.reversedMeaning,
+      keywords: card.keywords,
+    })),
+  };
+}
+
 const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -34,7 +77,7 @@ const ChatWidget = () => {
     try {
       const savedChat = sessionStorage.getItem(STORAGE_KEY);
       if (!savedChat) {
-        setMessages([INITIAL_MESSAGE]);
+        setMessages([buildInitialMessage()]);
         return;
       }
 
@@ -42,10 +85,10 @@ const ChatWidget = () => {
       if (Array.isArray(parsed) && parsed.length > 0) {
         setMessages(parsed);
       } else {
-        setMessages([INITIAL_MESSAGE]);
+        setMessages([buildInitialMessage()]);
       }
     } catch {
-      setMessages([INITIAL_MESSAGE]);
+      setMessages([buildInitialMessage()]);
     }
   }, []);
 
@@ -60,7 +103,7 @@ const ChatWidget = () => {
   }, [messages, isLoading, isOpen]);
 
   const handleClearChat = () => {
-    const resetMessages: Message[] = [INITIAL_MESSAGE];
+    const resetMessages: Message[] = [buildInitialMessage()];
     setMessages(resetMessages);
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(resetMessages));
   };
@@ -85,7 +128,7 @@ const ChatWidget = () => {
 
     try {
       const { generateTarotChatReplyAI } = await loadAiService();
-      const reply = await generateTarotChatReplyAI(toChatApiHistory(nextMessages));
+      const reply = await generateTarotChatReplyAI(toChatApiHistory(nextMessages), buildCurrentReadingContext());
 
       setMessages((prev) => [...prev, { role: 'model', text: reply }]);
     } catch (err: unknown) {

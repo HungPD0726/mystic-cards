@@ -10,12 +10,26 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { zodiacSigns, getCurrentSignIdByDate } from '@/data/zodiac';
-import { allCards } from '@/data/cards';
+import { getCardBySlug } from '@/data/cards';
+import type { TarotCard } from '@/data/types';
+
+interface RecentReadingRow {
+  id: string;
+  spread_id: string;
+  is_ai_interpreted: boolean;
+  created_at: string;
+}
+
+interface FavoriteCardViewModel {
+  id: string;
+  card_slug: string;
+  created_at: string;
+  card: TarotCard;
+}
 
 const Profile = () => {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
@@ -31,8 +45,8 @@ const Profile = () => {
   // Stats & Data state
   const [readingCount, setReadingCount] = useState(0);
   const [latestReadingAt, setLatestReadingAt] = useState<string | null>(null);
-  const [recentReadings, setRecentReadings] = useState<any[]>([]);
-  const [favorites, setFavorites] = useState<any[]>([]);
+  const [recentReadings, setRecentReadings] = useState<RecentReadingRow[]>([]);
+  const [favorites, setFavorites] = useState<FavoriteCardViewModel[]>([]);
   const [statsLoading, setStatsLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(true);
 
@@ -43,7 +57,7 @@ const Profile = () => {
       try {
         const { data, error } = await supabase
           .from('user_profiles')
-          .select('*')
+          .select('display_name, bio, birth_date, zodiac_sign')
           .eq('user_id', user.id)
           .maybeSingle();
           
@@ -74,43 +88,51 @@ const Profile = () => {
       setDataLoading(true);
       
       try {
-        // 1. Stats
-        const [{ count, error: countError }, { data: latest, error: latestError }] = await Promise.all([
-          supabase.from('readings').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+        const [
+          { count, error: countError },
+          { data: latest, error: latestError },
+          { data: readingsData, error: readingsError },
+          { data: favsData, error: favsError },
+        ] = await Promise.all([
+          supabase.from('readings').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
           supabase.from('readings').select('created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+          supabase
+            .from('readings')
+            .select('id, spread_id, is_ai_interpreted, created_at')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(5),
+          supabase
+            .from('favorite_cards')
+            .select('id, card_slug, created_at')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false }),
         ]);
         
         if (countError) throw countError;
+        if (latestError) throw latestError;
+        if (readingsError) throw readingsError;
+        if (favsError) throw favsError;
+
         setReadingCount(count ?? 0);
         setLatestReadingAt(latest?.created_at ?? null);
         setStatsLoading(false);
 
-        // 2. Recent Readings
-        const { data: readingsData, error: readingsError } = await supabase
-          .from('readings')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(5);
-          
-        if (readingsError) throw readingsError;
-        setRecentReadings(readingsData || []);
+        setRecentReadings(readingsData ?? []);
 
-        // 3. Favorites
-        const { data: favsData, error: favsError } = await supabase
-          .from('favorite_cards')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-          
-        if (favsError) throw favsError;
-        
-        // Map slug to card data
-        const enrichedFavs = (favsData || []).map(f => {
-          const card = allCards.find(c => c.slug === f.card_slug);
-          return { ...f, card };
-        }).filter(f => f.card);
-        
+        const enrichedFavs = (favsData ?? []).flatMap((favorite) => {
+          const card = getCardBySlug(favorite.card_slug);
+
+          return card
+            ? [
+                {
+                  ...favorite,
+                  card,
+                },
+              ]
+            : [];
+        });
+
         setFavorites(enrichedFavs);
         
       } catch (error) {

@@ -12,9 +12,10 @@ interface TarotChatProps {
   drawnCards: DrawnCardForAI[];
   spreadName: string;
   initialInterpretation: string;
+  focusQuestion?: string | null;
 }
 
-export const TarotChat = ({ drawnCards, spreadName, initialInterpretation }: TarotChatProps) => {
+export const TarotChat = ({ drawnCards, spreadName, initialInterpretation, focusQuestion }: TarotChatProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState<ChatApiMessage[]>([]);
@@ -60,6 +61,7 @@ export const TarotChat = ({ drawnCards, spreadName, initialInterpretation }: Tar
       const reply = await generateTarotChatReplyAI(apiMessages, {
         spreadName,
         interpretation: initialInterpretation,
+        focusQuestion,
         drawnCards,
       });
 

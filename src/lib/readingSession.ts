@@ -18,6 +18,7 @@ export interface StoredReading {
   spreadName: string;
   createdAt: string;
   aiInterpretation?: string | null;
+  notes?: string | null;
   drawnCards: StoredReadingCard[];
 }
 
@@ -28,12 +29,14 @@ export function createStoredReading(
   spreadType: SpreadType,
   spreadName: string,
   drawnCards: DrawnCard[],
+  notes?: string | null,
 ): StoredReading {
   return {
     spreadType,
     spreadName,
     createdAt: new Date().toISOString(),
     aiInterpretation: null,
+    notes: notes?.trim() ? notes.trim() : null,
     drawnCards: drawnCards.map((drawnCard) => ({
       cardId: drawnCard.card.id,
       cardName: drawnCard.card.name,
@@ -64,6 +67,7 @@ export function loadCurrentReading(): StoredReading | null {
     return {
       ...reading,
       aiInterpretation: reading.aiInterpretation ?? null,
+      notes: reading.notes ?? null,
     };
   } catch {
     return null;
@@ -86,6 +90,7 @@ export function consumeAutoAI(): boolean {
 }
 
 export function buildReadingShareText(reading: StoredReading, aiInterpretation?: string) {
+  const focusText = reading.notes?.trim() ? `Câu hỏi tập trung: ${reading.notes.trim()}\n` : '';
   const cardSummary = reading.drawnCards
     .map((card) => `- ${card.position}: ${card.cardName} (${card.orientation === 'upright' ? 'Xuôi' : 'Ngược'})`)
     .join('\n');
@@ -95,5 +100,5 @@ export function buildReadingShareText(reading: StoredReading, aiInterpretation?:
     ? `\n\nLuận giải AI:\n${interpretationText.trim()}`
     : '';
 
-  return `Astral Arcana • ${reading.spreadName}\n${cardSummary}${interpretation}`;
+  return `Astral Arcana • ${reading.spreadName}\n${focusText}${cardSummary}${interpretation}`;
 }

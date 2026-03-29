@@ -91,12 +91,20 @@ export const allCards: TarotCard[] = [
   ...createMinorCards('Pentacles', 'Xu', 'pentacles'),
 ];
 
+const cardsById = new Map(allCards.map((card) => [card.id, card] as const));
+const cardsBySlug = new Map(allCards.map((card) => [card.slug, card] as const));
+const cardsByName = new Map(allCards.map((card) => [card.name, card] as const));
+
 export function getCardBySlug(slug: string): TarotCard | undefined {
-  return allCards.find(c => c.slug === slug);
+  return cardsBySlug.get(slug);
 }
 
 export function getCardById(id: number): TarotCard | undefined {
-  return allCards.find(c => c.id === id);
+  return cardsById.get(id);
+}
+
+export function getCardByName(name: string): TarotCard | undefined {
+  return cardsByName.get(name);
 }
 
 export const cardGroups = [

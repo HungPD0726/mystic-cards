@@ -11,13 +11,21 @@ import {
   Stars,
   Wand2,
 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MeaningDialog } from '@/components/MeaningDialog';
 import { SpreadLayout } from '@/components/SpreadLayout';
 import { CardBack } from '@/components/TarotCard';
+import { Textarea } from '@/components/ui/textarea';
 import { DrawnCard, SpreadType } from '@/data/types';
 import { useTarotReading } from '@/hooks/useTarotReading';
 import { createStoredReading, saveCurrentReading, setAutoAI } from '@/lib/readingSession';
+
+const focusPromptSuggestions = [
+  'Điều gì mình cần nhìn rõ nhất trong giai đoạn này?',
+  'Mình nên ưu tiên điều gì để bớt rối và rõ hướng hơn?',
+  'Năng lượng nào đang ảnh hưởng mạnh nhất đến mình lúc này?',
+];
 
 const ReadingDraw = () => {
   const { spread: spreadId } = useParams<{ spread: string }>();
@@ -25,6 +33,7 @@ const ReadingDraw = () => {
   const reading = useTarotReading(spreadId as SpreadType);
   const [selectedCard, setSelectedCard] = useState<DrawnCard | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [focusQuestion, setFocusQuestion] = useState('');
 
   if (!reading.spread) {
     return (
@@ -41,6 +50,8 @@ const ReadingDraw = () => {
   const totalCards = reading.spread.cardCount;
   const progress = Math.round((reading.drawIndex / totalCards) * 100);
   const nextPosition = reading.spread.positions[reading.drawIndex];
+  const trimmedFocusQuestion = focusQuestion.trim();
+  const focusCharacterCount = focusQuestion.length;
   const stageText = !reading.isShuffled
     ? reading.isShuffling
       ? 'Đang xáo bộ bài'
@@ -55,7 +66,12 @@ const ReadingDraw = () => {
   };
 
   const persistCurrentReading = () => {
-    const storedReading = createStoredReading(reading.spread.id, reading.spread.name, reading.drawnCards);
+    const storedReading = createStoredReading(
+      reading.spread.id,
+      reading.spread.name,
+      reading.drawnCards,
+      focusQuestion,
+    );
     saveCurrentReading(storedReading);
   };
 
@@ -110,7 +126,9 @@ const ReadingDraw = () => {
               <div className="rounded-2xl border border-border/60 bg-background/45 p-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Gợi ý</p>
                 <p className="mt-2 text-sm font-semibold text-foreground">
-                  Giữ một câu hỏi cụ thể trong đầu trước mỗi lần rút.
+                  {trimmedFocusQuestion
+                    ? 'Luận giải sẽ ưu tiên bám theo câu hỏi bạn vừa ghi.'
+                    : 'Giữ một câu hỏi cụ thể trong đầu trước mỗi lần rút.'}
                 </p>
               </div>
             </div>
@@ -133,9 +151,49 @@ const ReadingDraw = () => {
                   exit={{ opacity: 0, y: -8 }}
                   className="py-4"
                 >
+                  <div className="mb-6 rounded-[26px] border border-gold/20 bg-background/45 p-4 sm:p-5">
+                    <div className="flex flex-col gap-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.2em] text-gold/80">Nghi thức tập trung</p>
+                          <h2 className="mt-2 text-xl font-semibold text-foreground" style={{ fontFamily: 'Cinzel, serif' }}>
+                            Giữ một câu hỏi trong lòng trước khi xáo bài
+                          </h2>
+                          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                            Lấy cảm hứng từ Tarot-vibe, bạn có thể viết ngắn điều mình đang băn khoăn để phần luận giải AI
+                            bám sát hơn với hoàn cảnh hiện tại. Mục này là tùy chọn.
+                          </p>
+                        </div>
+                        <Badge variant="secondary" className="w-fit border-gold/20 bg-gold/10 text-gold">
+                          {focusCharacterCount}/180
+                        </Badge>
+                      </div>
+
+                      <Textarea
+                        value={focusQuestion}
+                        onChange={(event) => setFocusQuestion(event.target.value.slice(0, 180))}
+                        placeholder="Ví dụ: Mình cần tập trung điều gì để cải thiện công việc trong 30 ngày tới?"
+                        className="min-h-[110px] border-gold/20 bg-background/60 text-sm leading-relaxed focus-visible:ring-gold/20"
+                      />
+
+                      <div className="flex flex-wrap gap-2">
+                        {focusPromptSuggestions.map((prompt) => (
+                          <button
+                            key={prompt}
+                            type="button"
+                            onClick={() => setFocusQuestion(prompt)}
+                            className="rounded-full border border-border/60 bg-card/70 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-gold/35 hover:text-gold"
+                          >
+                            {prompt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
                   <p className="mx-auto max-w-2xl text-center text-sm leading-relaxed text-muted-foreground">
-                    Xáo bộ bài để bắt đầu. Sau đó bạn sẽ mở từng lá theo đúng vị trí của spread, giúp mạch luận giải
-                    rõ ràng và không bị nhảy ý.
+                    Xáo bộ bài để bắt đầu. Sau đó bạn sẽ mở từng lá theo đúng vị trí của spread, giúp mạch luận giải rõ ràng
+                    và không bị nhảy ý.
                   </p>
 
                   <div className="mt-8 flex justify-center overflow-x-auto pb-2 md:overflow-visible md:pb-0">
@@ -159,6 +217,15 @@ const ReadingDraw = () => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
                 >
+                  {trimmedFocusQuestion && (
+                    <div className="mb-6 rounded-2xl border border-gold/20 bg-gold/5 p-4">
+                      <p className="text-xs uppercase tracking-[0.2em] text-gold/80">Điểm tập trung</p>
+                      <p className="mt-2 text-sm leading-relaxed text-foreground/90">
+                        "{trimmedFocusQuestion}"
+                      </p>
+                    </div>
+                  )}
+
                   <div className="mb-6 rounded-2xl border border-border/60 bg-background/40 p-4">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <div>
