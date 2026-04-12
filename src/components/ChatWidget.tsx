@@ -39,8 +39,8 @@ function buildInitialMessage(): Message {
   return {
     role: 'model',
     text:
-      `MÃ¬nh Ä‘ang nhÃ¬n tháº¥y tráº£i bÃ i "${reading.spreadName}" gáº§n nháº¥t cá»§a báº¡n. ` +
-      `Báº¡n cÃ³ thá»ƒ há»i sÃ¢u hÆ¡n vá» ${cardPreview} hoáº·c xin káº¿t ná»‘i Ã½ nghÄ©a giá»¯a cÃ¡c lÃ¡ bÃ i.`,
+      `Mình đang nhìn thấy trải bài "${reading.spreadName}" gần nhất của bạn. ` +
+      `Bạn có thể hỏi sâu hơn về ${cardPreview} hoặc xin kết nối ý nghĩa giữa các lá bài.`,
   };
 }
 
@@ -55,6 +55,7 @@ function buildCurrentReadingContext(): ChatReadingContext | undefined {
     spreadName: reading.spreadName,
     interpretation: reading.aiInterpretation ?? '',
     focusQuestion: reading.notes ?? null,
+    clarificationAnswers: reading.clarificationAnswers ?? [],
     drawnCards: reading.drawnCards.map((card) => ({
       cardName: card.cardName,
       orientation: card.orientation,

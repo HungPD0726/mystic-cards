@@ -1,15 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowRight,
   Eye,
   Layers,
+  Maximize2,
+  Minimize2,
   RotateCcw,
   Shuffle,
   Sparkles,
   Stars,
   Wand2,
+  Zap,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,20 +23,77 @@ import { Textarea } from '@/components/ui/textarea';
 import { DrawnCard, SpreadType } from '@/data/types';
 import { useTarotReading } from '@/hooks/useTarotReading';
 import { createStoredReading, saveCurrentReading, setAutoAI } from '@/lib/readingSession';
+import { mainThemes } from '@/data/themes';
+import { ClarificationAnswer } from '@/data/clarifyQuestions';
+import { ClarifyModal } from '@/components/ClarifyModal';
+import { FocusScreen } from '@/components/FocusScreen';
+import { LightningCanvas, LightningCanvasHandle } from '@/components/LightningCanvas';
+import { useAudioManager } from '@/hooks/useAudioManager';
+import { Switch } from '@/components/ui/switch';
+import { useFullscreen } from '@/hooks/useFullscreen';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
-const focusPromptSuggestions = [
-  'Điều gì mình cần nhìn rõ nhất trong giai đoạn này?',
-  'Mình nên ưu tiên điều gì để bớt rối và rõ hướng hơn?',
-  'Năng lượng nào đang ảnh hưởng mạnh nhất đến mình lúc này?',
-];
+const LIGHTNING_STORAGE_KEY = 'mystic_lightning_enabled';
 
 const ReadingDraw = () => {
   const { spread: spreadId } = useParams<{ spread: string }>();
   const navigate = useNavigate();
   const reading = useTarotReading(spreadId as SpreadType);
+  const { playSfx } = useAudioManager();
+  const { isFullscreen, toggle } = useFullscreen();
+  const lightningRef = useRef<LightningCanvasHandle | null>(null);
+
   const [selectedCard, setSelectedCard] = useState<DrawnCard | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [focusQuestion, setFocusQuestion] = useState('');
+  const [selectedThemeId, setSelectedThemeId] = useState(mainThemes[0]?.id ?? 'love');
+  const [selectedSubThemeId, setSelectedSubThemeId] = useState(mainThemes[0]?.subThemes[0]?.id ?? '');
+  const [showFocusScreen, setShowFocusScreen] = useState(false);
+  const [hasFocusCompleted, setHasFocusCompleted] = useState(false);
+  const [clarifyOpen, setClarifyOpen] = useState(false);
+  const [fullscreenPromptOpen, setFullscreenPromptOpen] = useState(false);
+  const [lightningEnabled, setLightningEnabled] = useState<boolean>(() => {
+    const raw = window.localStorage.getItem(LIGHTNING_STORAGE_KEY);
+    return raw === null ? true : raw === 'true';
+  });
+
+  const activeTheme = useMemo(
+    () => mainThemes.find((theme) => theme.id === selectedThemeId) ?? mainThemes[0],
+    [selectedThemeId],
+  );
+  const activeSubTheme =
+    activeTheme?.subThemes.find((subTheme) => subTheme.id === selectedSubThemeId) ?? activeTheme?.subThemes[0];
+
+  useEffect(() => {
+    if (activeTheme && !activeTheme.subThemes.some((subTheme) => subTheme.id === selectedSubThemeId)) {
+      setSelectedSubThemeId(activeTheme.subThemes[0]?.id ?? '');
+    }
+  }, [activeTheme, selectedSubThemeId]);
+
+  useEffect(() => {
+    window.localStorage.setItem(LIGHTNING_STORAGE_KEY, String(lightningEnabled));
+  }, [lightningEnabled]);
+
+  useEffect(() => {
+    setHasFocusCompleted(false);
+    setShowFocusScreen(false);
+  }, [spreadId]);
+
+  useEffect(() => {
+    if (!reading.isShuffled || reading.drawIndex > 0 || !focusQuestion.trim()) {
+      return;
+    }
+
+    if (!hasFocusCompleted) {
+      setShowFocusScreen(true);
+    }
+  }, [focusQuestion, hasFocusCompleted, reading.drawIndex, reading.isShuffled]);
 
   if (!reading.spread) {
     return (
@@ -52,6 +112,8 @@ const ReadingDraw = () => {
   const nextPosition = reading.spread.positions[reading.drawIndex];
   const trimmedFocusQuestion = focusQuestion.trim();
   const focusCharacterCount = focusQuestion.length;
+  const requiresFocusScreen = !!trimmedFocusQuestion && reading.drawIndex === 0;
+  const canDrawNext = !requiresFocusScreen || hasFocusCompleted;
   const stageText = !reading.isShuffled
     ? reading.isShuffling
       ? 'Đang xáo bộ bài'
@@ -65,14 +127,16 @@ const ReadingDraw = () => {
     setDialogOpen(true);
   };
 
-  const persistCurrentReading = () => {
-    const storedReading = createStoredReading(
-      reading.spread.id,
-      reading.spread.name,
-      reading.drawnCards,
-      focusQuestion,
-    );
+  const buildReadingPayload = (clarificationAnswers?: ClarificationAnswer[] | null) =>
+    createStoredReading(reading.spread.id, reading.spread.name, reading.drawnCards, {
+      notes: focusQuestion,
+      clarificationAnswers,
+    });
+
+  const persistCurrentReading = (clarificationAnswers?: ClarificationAnswer[] | null) => {
+    const storedReading = buildReadingPayload(clarificationAnswers);
     saveCurrentReading(storedReading);
+    return storedReading;
   };
 
   const handleViewResult = () => {
@@ -81,14 +145,51 @@ const ReadingDraw = () => {
     navigate(`/reading/${reading.spread.id}/result`);
   };
 
-  const handleAIInterpret = () => {
-    persistCurrentReading();
+  const handleClarifyComplete = (answers: ClarificationAnswer[]) => {
+    persistCurrentReading(answers);
     setAutoAI(true);
     navigate(`/reading/${reading.spread.id}/result`);
   };
 
+  const handleShuffle = () => {
+    playSfx('shuffle');
+    setHasFocusCompleted(false);
+    setShowFocusScreen(false);
+    setFullscreenPromptOpen(true);
+    reading.shuffle();
+  };
+
+  const handleDrawNext = () => {
+    if (!canDrawNext) {
+      setShowFocusScreen(true);
+      return;
+    }
+
+    playSfx('draw');
+    reading.drawNext();
+  };
+
+  const handleRevealComplete = (index: number) => {
+    if (!reading.drawnCards[index]?.revealed) {
+      return;
+    }
+
+    playSfx('flip');
+    if (lightningEnabled) {
+      lightningRef.current?.triggerLightning();
+    }
+  };
+
+  const handleReset = () => {
+    setHasFocusCompleted(false);
+    setShowFocusScreen(false);
+    setClarifyOpen(false);
+    reading.reset();
+  };
+
   return (
     <div className="relative min-h-screen overflow-x-clip">
+      <LightningCanvas ref={lightningRef} />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,hsl(var(--gold)/0.14),transparent_40%),radial-gradient(circle_at_85%_20%,hsl(var(--primary)/0.18),transparent_30%),radial-gradient(circle_at_10%_90%,hsl(var(--accent)/0.16),transparent_28%)]" />
 
       <div className="container relative mx-auto px-4 py-8 md:py-10">
@@ -97,12 +198,25 @@ const ReadingDraw = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mx-auto mb-6 max-w-6xl overflow-hidden rounded-[30px] border border-border/60 bg-card/45 p-5 backdrop-blur md:p-7"
         >
+          <div className="mb-5 flex items-start justify-between gap-4">
+            <div className="inline-flex items-center gap-2 rounded-full border border-gold/30 bg-background/40 px-4 py-1.5">
+              <Stars className="h-4 w-4 text-gold" />
+              <span className="text-xs uppercase tracking-[0.22em] text-gold/90">Reading Session</span>
+            </div>
+
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => void toggle()}
+              className="border-gold/30 text-gold hover:bg-secondary"
+              title="Chế độ toàn màn hình"
+            >
+              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
+          </div>
+
           <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
             <div>
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-gold/30 bg-background/40 px-4 py-1.5">
-                <Stars className="h-4 w-4 text-gold" />
-                <span className="text-xs uppercase tracking-[0.22em] text-gold/90">Reading Session</span>
-              </div>
               <h1 className="text-3xl font-bold text-foreground sm:text-4xl" style={{ fontFamily: 'Cinzel, serif' }}>
                 <span className="mr-2">{reading.spread.icon}</span>
                 {reading.spread.name}
@@ -124,11 +238,9 @@ const ReadingDraw = () => {
                 </p>
               </div>
               <div className="rounded-2xl border border-border/60 bg-background/45 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Gợi ý</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Điểm nhấn</p>
                 <p className="mt-2 text-sm font-semibold text-foreground">
-                  {trimmedFocusQuestion
-                    ? 'Luận giải sẽ ưu tiên bám theo câu hỏi bạn vừa ghi.'
-                    : 'Giữ một câu hỏi cụ thể trong đầu trước mỗi lần rút.'}
+                  {trimmedFocusQuestion ? 'Luận giải sẽ bám theo câu hỏi bạn vừa chọn.' : 'Hãy giữ một ý định rõ ràng trước khi rút.'}
                 </p>
               </div>
             </div>
@@ -157,11 +269,11 @@ const ReadingDraw = () => {
                         <div>
                           <p className="text-xs uppercase tracking-[0.2em] text-gold/80">Nghi thức tập trung</p>
                           <h2 className="mt-2 text-xl font-semibold text-foreground" style={{ fontFamily: 'Cinzel, serif' }}>
-                            Giữ một câu hỏi trong lòng trước khi xáo bài
+                            Chọn đúng chủ đề rồi giữ một câu hỏi trong lòng trước khi xáo bài
                           </h2>
                           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                            Lấy cảm hứng từ Tarot-vibe, bạn có thể viết ngắn điều mình đang băn khoăn để phần luận giải AI
-                            bám sát hơn với hoàn cảnh hiện tại. Mục này là tùy chọn.
+                            Lấy cảm hứng từ Tarot-vibe, bạn có thể chọn chủ đề lớn, đi vào tiểu chủ đề rồi dùng một câu hỏi preset
+                            làm điểm neo cho cả phiên đọc bài.
                           </p>
                         </div>
                         <Badge variant="secondary" className="w-fit border-gold/20 bg-gold/10 text-gold">
@@ -169,31 +281,81 @@ const ReadingDraw = () => {
                         </Badge>
                       </div>
 
-                      <Textarea
-                        value={focusQuestion}
-                        onChange={(event) => setFocusQuestion(event.target.value.slice(0, 180))}
-                        placeholder="Ví dụ: Mình cần tập trung điều gì để cải thiện công việc trong 30 ngày tới?"
-                        className="min-h-[110px] border-gold/20 bg-background/60 text-sm leading-relaxed focus-visible:ring-gold/20"
-                      />
-
-                      <div className="flex flex-wrap gap-2">
-                        {focusPromptSuggestions.map((prompt) => (
+                      <div className="grid gap-3 md:grid-cols-5">
+                        {mainThemes.map((theme) => (
                           <button
-                            key={prompt}
+                            key={theme.id}
                             type="button"
-                            onClick={() => setFocusQuestion(prompt)}
-                            className="rounded-full border border-border/60 bg-card/70 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-gold/35 hover:text-gold"
+                            onClick={() => setSelectedThemeId(theme.id)}
+                            className={`rounded-2xl border px-4 py-3 text-left transition ${
+                              theme.id === activeTheme.id
+                                ? 'border-gold/40 bg-gold/10 text-gold'
+                                : 'border-border/60 bg-card/60 text-muted-foreground hover:border-gold/25 hover:text-foreground'
+                            }`}
                           >
-                            {prompt}
+                            <div className="text-lg">{theme.icon}</div>
+                            <p className="mt-2 text-sm font-semibold" style={{ fontFamily: 'Cinzel, serif' }}>
+                              {theme.name}
+                            </p>
+                            <p className="mt-1 text-xs leading-relaxed">{theme.description}</p>
                           </button>
                         ))}
                       </div>
+
+                      {activeTheme && (
+                        <div className="rounded-2xl border border-border/60 bg-background/40 p-4">
+                          <p className="text-xs uppercase tracking-[0.2em] text-gold/80">Tiểu chủ đề</p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {activeTheme.subThemes.map((subTheme) => (
+                              <button
+                                key={subTheme.id}
+                                type="button"
+                                onClick={() => setSelectedSubThemeId(subTheme.id)}
+                                className={`rounded-full border px-3 py-2 text-xs transition ${
+                                  subTheme.id === activeSubTheme?.id
+                                    ? 'border-gold/35 bg-gold/10 text-gold'
+                                    : 'border-border/60 bg-card/70 text-muted-foreground hover:border-gold/25 hover:text-foreground'
+                                }`}
+                              >
+                                <span className="mr-1">{subTheme.icon}</span>
+                                {subTheme.name}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {activeSubTheme && (
+                        <div className="rounded-2xl border border-border/60 bg-background/35 p-4">
+                          <p className="text-sm font-semibold text-foreground">{activeSubTheme.name}</p>
+                          <p className="mt-1 text-sm text-muted-foreground">{activeSubTheme.description}</p>
+
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            {activeSubTheme.presetQuestions.slice(0, 6).map((prompt) => (
+                              <button
+                                key={prompt}
+                                type="button"
+                                onClick={() => setFocusQuestion(prompt.slice(0, 180))}
+                                className="rounded-full border border-border/60 bg-card/70 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-gold/35 hover:text-gold"
+                              >
+                                {prompt}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <Textarea
+                        value={focusQuestion}
+                        onChange={(event) => setFocusQuestion(event.target.value.slice(0, 180))}
+                        placeholder="Ví dụ: Mình cần tập trung điều gì để cải thiện tình huống này trong 30 ngày tới?"
+                        className="min-h-[110px] border-gold/20 bg-background/60 text-sm leading-relaxed focus-visible:ring-gold/20"
+                      />
                     </div>
                   </div>
 
                   <p className="mx-auto max-w-2xl text-center text-sm leading-relaxed text-muted-foreground">
-                    Xáo bộ bài để bắt đầu. Sau đó bạn sẽ mở từng lá theo đúng vị trí của spread, giúp mạch luận giải rõ ràng
-                    và không bị nhảy ý.
+                    Xáo bộ bài để bắt đầu. Nếu bạn đã nhập câu hỏi tập trung, màn focus sẽ xuất hiện trước khi được rút lá đầu tiên.
                   </p>
 
                   <div className="mt-8 flex justify-center overflow-x-auto pb-2 md:overflow-visible md:pb-0">
@@ -220,9 +382,7 @@ const ReadingDraw = () => {
                   {trimmedFocusQuestion && (
                     <div className="mb-6 rounded-2xl border border-gold/20 bg-gold/5 p-4">
                       <p className="text-xs uppercase tracking-[0.2em] text-gold/80">Điểm tập trung</p>
-                      <p className="mt-2 text-sm leading-relaxed text-foreground/90">
-                        "{trimmedFocusQuestion}"
-                      </p>
+                      <p className="mt-2 text-sm leading-relaxed text-foreground/90">"{trimmedFocusQuestion}"</p>
                     </div>
                   )}
 
@@ -231,9 +391,7 @@ const ReadingDraw = () => {
                       <div>
                         <p className="text-sm font-medium text-foreground">Tiến trình mở bài</p>
                         <p className="text-xs text-muted-foreground">
-                          {nextPosition
-                            ? `Tiếp theo: ${nextPosition.label}`
-                            : 'Bạn đã mở đủ tất cả vị trí của trải bài.'}
+                          {nextPosition ? `Tiếp theo: ${nextPosition.label}` : 'Bạn đã mở đủ tất cả vị trí của trải bài.'}
                         </p>
                       </div>
                       <p className="text-sm font-semibold text-gold">{progress}%</p>
@@ -252,6 +410,7 @@ const ReadingDraw = () => {
                     spreadType={reading.spread.id}
                     drawnCards={reading.drawnCards}
                     onCardClick={handleCardClick}
+                    onCardRevealComplete={handleRevealComplete}
                     size="lg"
                   />
                 </motion.div>
@@ -260,22 +419,26 @@ const ReadingDraw = () => {
 
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               {!reading.isShuffled && (
-                <Button onClick={reading.shuffle} disabled={reading.isShuffling} className="gap-2 glow-gold" size="lg">
+                <Button onClick={handleShuffle} disabled={reading.isShuffling} className="gap-2 glow-gold" size="lg">
                   <Shuffle className="h-4 w-4" />
                   {reading.isShuffling ? 'Đang xáo bài...' : 'Xáo bộ bài'}
                 </Button>
               )}
 
               {reading.isShuffled && !reading.allDrawn && (
-                <Button onClick={reading.drawNext} className="gap-2 glow-gold" size="lg">
+                <Button onClick={handleDrawNext} className="gap-2 glow-gold" size="lg">
                   <Layers className="h-4 w-4" />
-                  {nextPosition ? `Mở: ${nextPosition.label}` : `Rút lá ${reading.drawIndex + 1}`}
+                  {canDrawNext
+                    ? nextPosition
+                      ? `Mở: ${nextPosition.label}`
+                      : `Rút lá ${reading.drawIndex + 1}`
+                    : 'Hoàn tất nghi thức tập trung'}
                 </Button>
               )}
 
               {reading.allRevealed && (
                 <>
-                  <Button onClick={handleAIInterpret} className="gap-2 glow-gold" size="lg">
+                  <Button onClick={() => setClarifyOpen(true)} className="gap-2 glow-gold" size="lg">
                     <Sparkles className="h-4 w-4" />
                     Tạo luận giải AI
                   </Button>
@@ -293,7 +456,7 @@ const ReadingDraw = () => {
 
               {reading.isShuffled && (
                 <Button
-                  onClick={reading.reset}
+                  onClick={handleReset}
                   variant="outline"
                   className="gap-2 border-gold/30 text-gold hover:bg-secondary"
                 >
@@ -326,6 +489,16 @@ const ReadingDraw = () => {
                   Hướng dẫn phiên đọc
                 </h2>
                 <p className="text-sm text-muted-foreground">Theo dõi từng vị trí để không bị rối mạch.</p>
+              </div>
+            </div>
+
+            <div className="mb-5 rounded-2xl border border-border/60 bg-background/45 p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Hiệu ứng sét</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Bật flash thần bí khi lá bài được lật.</p>
+                </div>
+                <Switch checked={lightningEnabled} onCheckedChange={setLightningEnabled} />
               </div>
             </div>
 
@@ -366,13 +539,61 @@ const ReadingDraw = () => {
                 );
               })}
             </div>
+
+            {activeSubTheme && (
+              <div className="mt-5 rounded-2xl border border-border/60 bg-background/45 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-gold/80">Chủ đề đang chọn</p>
+                <p className="mt-2 text-sm font-semibold text-foreground">
+                  {activeTheme?.name} • {activeSubTheme.name}
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{activeSubTheme.description}</p>
+              </div>
+            )}
           </motion.aside>
         </div>
       </div>
 
+      <AnimatePresence>{showFocusScreen && <FocusScreen question={trimmedFocusQuestion} onComplete={() => {
+        setShowFocusScreen(false);
+        setHasFocusCompleted(true);
+      }} />}</AnimatePresence>
+
+      <ClarifyModal open={clarifyOpen} onOpenChange={setClarifyOpen} onComplete={handleClarifyComplete} />
       <MeaningDialog drawnCard={selectedCard} open={dialogOpen} onOpenChange={setDialogOpen} />
+
+      <Dialog open={fullscreenPromptOpen} onOpenChange={setFullscreenPromptOpen}>
+        <DialogContent className="border-gold/20 bg-[rgba(11,5,28,0.98)] text-foreground sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-gold" style={{ fontFamily: 'Cinzel, serif' }}>
+              <Zap className="h-5 w-5" />
+              Vào chế độ tập trung?
+            </DialogTitle>
+            <DialogDescription className="text-sm leading-relaxed text-muted-foreground">
+              Toàn màn hình sẽ giúp phiên rút bài bớt xao nhãng và tạo cảm giác nghi thức hơn.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-wrap justify-end gap-3">
+            <Button variant="outline" className="border-gold/30 text-gold hover:bg-secondary" onClick={() => setFullscreenPromptOpen(false)}>
+              Để sau
+            </Button>
+            <Button
+              className="glow-gold"
+              onClick={() => {
+                setFullscreenPromptOpen(false);
+                if (!isFullscreen) {
+                  void toggle();
+                }
+              }}
+            >
+              Bật toàn màn hình
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
 export default ReadingDraw;
+

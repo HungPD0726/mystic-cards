@@ -43,7 +43,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     let isActive = true;
 
     const applySession = async (nextSession: Session | null, syncErrorLabel: string) => {
-      if (!isActive) return;
+      if (!isActive) {
+        return;
+      }
 
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
@@ -65,7 +67,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         await syncBackendAuth(nextSession);
         lastSyncedAccessTokenRef.current = nextAccessToken;
       } catch (error) {
-        console.error(syncErrorLabel, error);
+        console.warn(syncErrorLabel, error);
       } finally {
         if (isActive) {
           setIsLoading(false);
@@ -77,9 +79,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       void applySession(nextSession, 'Failed to sync with backend:');
     });
 
-    void supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      return applySession(initialSession, 'Initial backend sync failed:');
-    });
+    void supabase.auth
+      .getSession()
+      .then(({ data: { session: initialSession } }) => applySession(initialSession, 'Initial backend sync failed:'))
+      .catch((error) => {
+        console.warn('Failed to restore Supabase session:', error);
+
+        if (!isActive) {
+          return;
+        }
+
+        lastSyncedAccessTokenRef.current = null;
+        setSession(null);
+        setUser(null);
+        setIsLoading(false);
+      });
 
     return () => {
       isActive = false;

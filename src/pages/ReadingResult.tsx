@@ -18,6 +18,9 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { publicAsset } from '@/lib/publicAsset';
+import { ClarificationAnswer } from '@/data/clarifyQuestions';
+import { ClarifyModal } from '@/components/ClarifyModal';
+import { useTilt } from '@/hooks/useTilt';
 
 type SavedReadingTarget =
   | {
@@ -49,6 +52,50 @@ function buildCardConclusion(card: ResultReadingCard) {
   return `Kết luận cho lá này: ${card.cardName} là lời nhắc rằng ở ${card.position.toLowerCase()} vẫn còn điều cần điều chỉnh, chữa lành hoặc nhìn lại kỹ hơn.`;
 }
 
+function TiltedResultCard({ card, index, placeholderSrc }: { card: ResultReadingCard; index: number; placeholderSrc: string }) {
+  const tiltRef = useTilt({ max: 14, scale: 1.015, perspective: 1200 }, true);
+
+  return (
+    <motion.div
+      key={`${card.position}-${index}`}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.08 }}
+      className="group rounded-[26px] border border-border/60 bg-card/55 p-4 transition-all duration-300 hover:-translate-y-1 hover:border-gold/40 hover:shadow-[0_14px_34px_hsl(var(--gold)/0.12)]"
+    >
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <span
+          className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+          style={{ fontFamily: 'Cinzel, serif' }}
+        >
+          {card.position}
+        </span>
+        <Badge variant={card.orientation === 'reversed' ? 'destructive' : 'secondary'} className="text-[10px]">
+          {card.orientation === 'reversed' ? 'Ngược' : 'Xuôi'}
+        </Badge>
+      </div>
+
+      <div ref={tiltRef} className="overflow-hidden rounded-xl border border-border/60 bg-background/45 p-2">
+        <img
+          src={card.imagePath}
+          alt={card.cardName}
+          className={cn(
+            'h-52 w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]',
+            card.orientation === 'reversed' && 'rotate-180',
+          )}
+          onError={(event) => {
+            (event.target as HTMLImageElement).src = placeholderSrc;
+          }}
+        />
+      </div>
+
+      <p className="mt-3 text-center text-sm font-semibold text-foreground" style={{ fontFamily: 'Cinzel, serif' }}>
+        {card.cardName}
+      </p>
+    </motion.div>
+  );
+}
+
 const ReadingResult = () => {
   const { spread: spreadId } = useParams<{ spread: string }>();
   const { isAuthenticated, user } = useAuth();
@@ -59,6 +106,7 @@ const ReadingResult = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSyncingSavedAI, setIsSyncingSavedAI] = useState(false);
   const [needsAiResync, setNeedsAiResync] = useState(false);
+  const [clarifyOpen, setClarifyOpen] = useState(false);
   const placeholderSrc = publicAsset('placeholder.svg');
   const readingRef = useRef<StoredReading | null>(null);
   const aiInterpretationRef = useRef('');
@@ -162,6 +210,7 @@ const ReadingResult = () => {
           readingData.drawnCards,
           readingData.spreadName,
           readingData.notes ?? null,
+          readingData.clarificationAnswers ?? null,
         );
         const nextReading: StoredReading = {
           ...readingData,
@@ -316,6 +365,20 @@ const ReadingResult = () => {
     }
   };
 
+  const handleClarifyComplete = (answers: ClarificationAnswer[]) => {
+    if (!reading) {
+      return;
+    }
+
+    const nextReading: StoredReading = {
+      ...reading,
+      clarificationAnswers: answers,
+    };
+
+    persistReading(nextReading);
+    void generateAIInterpretation(nextReading);
+  };
+
   if (!reading) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 text-center">
@@ -366,9 +429,22 @@ const ReadingResult = () => {
               {reading.notes?.trim() && (
                 <div className="mt-4 rounded-2xl border border-gold/20 bg-gold/5 px-4 py-3">
                   <p className="text-xs uppercase tracking-[0.2em] text-gold/80">Câu hỏi tập trung</p>
-                  <p className="mt-2 text-sm leading-relaxed text-foreground/90">
-                    "{reading.notes.trim()}"
-                  </p>
+                  <p className="mt-2 text-sm leading-relaxed text-foreground/90">"{reading.notes.trim()}"</p>
+                </div>
+              )}
+              {reading.clarificationAnswers && reading.clarificationAnswers.length > 0 && (
+                <div className="mt-4 rounded-2xl border border-border/60 bg-background/45 px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-gold/80">Clarification đã dùng</p>
+                  <div className="mt-3 space-y-2">
+                    {reading.clarificationAnswers.map((item) => (
+                      <p key={item.questionId} className="text-sm leading-relaxed text-foreground/85">
+                        {item.questionText}
+                        <span className="ml-2 text-gold">
+                          {item.answer === 'yes' ? 'Có' : item.answer === 'no' ? 'Không' : 'Bỏ qua'}
+                        </span>
+                      </p>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -386,9 +462,7 @@ const ReadingResult = () => {
               </div>
               <div className="rounded-2xl border border-border/60 bg-background/45 px-4 py-3">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">Luận giải AI</p>
-                <p className="mt-1 text-sm font-semibold text-foreground">
-                  {aiInterpretation ? 'Đã tạo' : 'Chưa tạo'}
-                </p>
+                <p className="mt-1 text-sm font-semibold text-foreground">{aiInterpretation ? 'Đã tạo' : 'Chưa tạo'}</p>
               </div>
             </div>
           </div>
@@ -401,43 +475,7 @@ const ReadingResult = () => {
           className="mx-auto mb-6 grid max-w-5xl gap-4 sm:grid-cols-2 xl:grid-cols-3"
         >
           {reading.drawnCards.map((card, index) => (
-            <motion.div
-              key={`${card.position}-${index}`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.08 }}
-              className="group rounded-[26px] border border-border/60 bg-card/55 p-4 transition-all duration-300 hover:-translate-y-1 hover:border-gold/40 hover:shadow-[0_14px_34px_hsl(var(--gold)/0.12)]"
-            >
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <span
-                  className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-                  style={{ fontFamily: 'Cinzel, serif' }}
-                >
-                  {card.position}
-                </span>
-                <Badge variant={card.orientation === 'reversed' ? 'destructive' : 'secondary'} className="text-[10px]">
-                  {card.orientation === 'reversed' ? 'Ngược' : 'Xuôi'}
-                </Badge>
-              </div>
-
-              <div className="overflow-hidden rounded-xl border border-border/60 bg-background/45 p-2">
-                <img
-                  src={card.imagePath}
-                  alt={card.cardName}
-                  className={cn(
-                    'h-52 w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]',
-                    card.orientation === 'reversed' && 'rotate-180',
-                  )}
-                  onError={(event) => {
-                    (event.target as HTMLImageElement).src = placeholderSrc;
-                  }}
-                />
-              </div>
-
-              <p className="mt-3 text-center text-sm font-semibold text-foreground" style={{ fontFamily: 'Cinzel, serif' }}>
-                {card.cardName}
-              </p>
-            </motion.div>
+            <TiltedResultCard key={`${card.position}-${index}`} card={card} index={index} placeholderSrc={placeholderSrc} />
           ))}
         </motion.div>
 
@@ -454,7 +492,7 @@ const ReadingResult = () => {
             </h2>
 
             {!isLoadingAI && (
-              <Button size="sm" onClick={() => generateAIInterpretation(reading)} className="gap-2 glow-gold">
+              <Button size="sm" onClick={() => setClarifyOpen(true)} className="gap-2 glow-gold">
                 <Sparkles className="h-4 w-4" />
                 {aiInterpretation ? 'Tạo lại tổng kết cuối cùng' : 'Tạo tổng kết cuối cùng'}
               </Button>
@@ -576,8 +614,11 @@ const ReadingResult = () => {
           </motion.p>
         )}
       </div>
+
+      <ClarifyModal open={clarifyOpen} onOpenChange={setClarifyOpen} onComplete={handleClarifyComplete} />
     </div>
   );
 };
 
 export default ReadingResult;
+

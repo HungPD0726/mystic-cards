@@ -36,8 +36,8 @@ const Register = () => {
 
       toast.success('Dang ky thanh cong.');
       navigate('/');
-    } catch (error: any) {
-      toast.error(error.message || 'Da xay ra loi, vui long thu lai.');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error && error.message ? error.message : 'Da xay ra loi, vui long thu lai.');
     } finally {
       setIsLoading(false);
     }

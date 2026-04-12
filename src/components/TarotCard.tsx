@@ -2,12 +2,15 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Orientation, TarotCard as TarotCardType } from '@/data/types';
 import { publicAsset } from '@/lib/publicAsset';
+import { useEffect, useRef } from 'react';
+import { useTilt } from '@/hooks/useTilt';
 
 interface TarotCardProps {
   card: TarotCardType;
   revealed: boolean;
   orientation?: Orientation;
   onClick?: () => void;
+  onRevealComplete?: () => void;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
 }
@@ -23,16 +26,37 @@ export function TarotCard({
   revealed,
   orientation = 'upright',
   onClick,
+  onRevealComplete,
   className,
   size = 'md',
 }: TarotCardProps) {
   const placeholderSrc = publicAsset('placeholder.svg');
+  const tiltRef = useTilt({}, revealed);
+  const previousRevealedRef = useRef(revealed);
+
+  useEffect(() => {
+    const wasRevealed = previousRevealedRef.current;
+    previousRevealedRef.current = revealed;
+
+    if (!revealed || wasRevealed || !onRevealComplete) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      onRevealComplete();
+    }, 620);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [onRevealComplete, revealed]);
 
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={!revealed}
+      ref={tiltRef}
       className={cn(
         'perspective-1000 rounded-xl focus:outline-none focus:ring-2 focus:ring-gold/40 disabled:cursor-default',
         revealed ? 'cursor-pointer' : 'cursor-default',

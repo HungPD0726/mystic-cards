@@ -7,6 +7,7 @@ interface SpreadLayoutProps {
   spreadType: SpreadType;
   drawnCards: DrawnCard[];
   onCardClick?: (index: number) => void;
+  onCardRevealComplete?: (index: number) => void;
   size?: 'sm' | 'md' | 'lg';
 }
 
@@ -21,7 +22,13 @@ const layoutClassBySpread: Record<SpreadType, string> = {
   horseshoe: 'mx-auto grid w-full max-w-6xl grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4',
 };
 
-export function SpreadLayout({ spreadType, drawnCards, onCardClick, size = 'md' }: SpreadLayoutProps) {
+export function SpreadLayout({
+  spreadType,
+  drawnCards,
+  onCardClick,
+  onCardRevealComplete,
+  size = 'md',
+}: SpreadLayoutProps) {
   return (
     <div className={layoutClassBySpread[spreadType]}>
       {drawnCards.map((drawnCard, index) => (
@@ -62,6 +69,7 @@ export function SpreadLayout({ spreadType, drawnCards, onCardClick, size = 'md' 
               revealed={drawnCard.revealed}
               orientation={drawnCard.orientation}
               onClick={() => drawnCard.revealed && onCardClick?.(index)}
+              onRevealComplete={() => drawnCard.revealed && onCardRevealComplete?.(index)}
               size={size}
             />
           </div>

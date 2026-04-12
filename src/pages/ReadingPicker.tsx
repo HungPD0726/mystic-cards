@@ -1,10 +1,12 @@
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Clock3, Compass, Layers3, Sparkles, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { spreads, spreadCategoryMeta } from '@/data/spreads';
 import { SpreadCategory } from '@/data/types';
 import { cn } from '@/lib/utils';
+import BackgroundParticles from '@/components/BackgroundParticles';
+import { useState } from 'react';
 
 const categoryOrder: SpreadCategory[] = ['quick-guidance', 'classic', 'theme', 'deep-dive'];
 const starterIds = new Set(['one-card', 'three-card', 'love']);
@@ -20,8 +22,19 @@ const groupedSpreads = categoryOrder
 const starterSpreads = spreads.filter((spread) => starterIds.has(spread.id));
 
 const ReadingPicker = () => {
+  const navigate = useNavigate();
+  const [warpMode, setWarpMode] = useState(false);
+
+  const openSpread = (spreadId: string) => {
+    setWarpMode(true);
+    window.setTimeout(() => {
+      navigate(`/reading/${spreadId}`);
+    }, 460);
+  };
+
   return (
     <div className="relative min-h-screen overflow-x-clip">
+      <BackgroundParticles warp={warpMode} />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,hsl(var(--gold)/0.12),transparent_42%),radial-gradient(circle_at_80%_18%,hsl(var(--primary)/0.16),transparent_28%),radial-gradient(circle_at_20%_88%,hsl(var(--accent)/0.16),transparent_30%)]" />
 
       <section className="relative border-b border-border/50">
@@ -151,12 +164,10 @@ const ReadingPicker = () => {
                     ))}
                   </div>
 
-                  <Link to={`/reading/${spread.id}`} className="mt-5 block">
-                    <Button className="w-full gap-2 glow-gold">
-                      Mở trải bài
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
+                  <Button className="mt-5 w-full gap-2 glow-gold" onClick={() => openSpread(spread.id)}>
+                    Mở trải bài
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
                 </div>
               </motion.div>
             ))}
@@ -266,12 +277,10 @@ const ReadingPicker = () => {
                         ))}
                       </div>
 
-                      <Link to={`/reading/${spread.id}`} className="mt-6 inline-flex">
-                        <Button className="gap-2 glow-gold">
-                          Bắt đầu với spread này
-                          <ArrowRight className="h-4 w-4" />
-                        </Button>
-                      </Link>
+                      <Button className="mt-6 gap-2 glow-gold" onClick={() => openSpread(spread.id)}>
+                        Bắt đầu với spread này
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -280,8 +289,15 @@ const ReadingPicker = () => {
           ))}
         </div>
       </section>
+
+      <div className="container mx-auto px-4 pb-12 text-center">
+        <Link to="/" className="text-sm text-muted-foreground transition-colors hover:text-gold">
+          Quay lại trang chủ
+        </Link>
+      </div>
     </div>
   );
 };
 
 export default ReadingPicker;
+

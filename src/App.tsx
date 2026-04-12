@@ -9,6 +9,7 @@ import { AuthProvider } from "@/features/auth/context/AuthContext";
 
 const queryClient = new QueryClient();
 const ChatWidget = lazy(() => import("@/components/ChatWidget"));
+const MusicWidget = lazy(() => import("@/components/MusicWidget").then((module) => ({ default: module.MusicWidget })));
 const Index = lazy(() => import("./pages/Index"));
 const ReadingPicker = lazy(() => import("./pages/ReadingPicker"));
 const ReadingDraw = lazy(() => import("./pages/ReadingDraw"));
@@ -36,7 +37,10 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter basename={import.meta.env.BASE_URL}>
+      <BrowserRouter
+        basename={import.meta.env.BASE_URL}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
         <AuthProvider>
           <div className="min-h-screen bg-background">
             <Header />
@@ -59,6 +63,9 @@ const App = () => (
             </Suspense>
             <Suspense fallback={null}>
               <ChatWidget />
+            </Suspense>
+            <Suspense fallback={null}>
+              <MusicWidget />
             </Suspense>
           </div>
         </AuthProvider>

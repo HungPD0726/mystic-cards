@@ -1,8 +1,10 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Sparkles, BookOpen, Home, History, LogIn, LogOut, User, Compass, Sun } from 'lucide-react';
+import { Sparkles, BookOpen, Home, History, LogIn, LogOut, User, Compass, Sun, Shield, Coffee } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { publicAsset } from '@/lib/publicAsset';
+import { PrivacyModal } from '@/components/PrivacyModal';
+import { DonateModal } from '@/components/DonateModal';
 
 const navItems = [
   { to: '/', label: 'Trang chủ', icon: Home },
@@ -64,6 +66,24 @@ export function Header() {
                 </Link>
               );
             })}
+
+            <PrivacyModal
+              trigger={
+                <button className="hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary/40 hover:text-foreground md:flex">
+                  <Shield className="h-4 w-4" />
+                  <span className="hidden lg:inline">Bảo mật</span>
+                </button>
+              }
+            />
+
+            <DonateModal
+              trigger={
+                <button className="hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary/40 hover:text-foreground md:flex">
+                  <Coffee className="h-4 w-4" />
+                  <span className="hidden lg:inline">Ủng hộ</span>
+                </button>
+              }
+            />
 
             {isAuthenticated ? (
               <>

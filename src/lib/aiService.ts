@@ -11,6 +11,13 @@ export interface DrawnCardForAI {
   keywords?: string[];
 }
 
+export interface ClarificationAnswerForAI {
+  questionId: string;
+  questionText: string;
+  category: string;
+  answer: 'yes' | 'no' | 'skip';
+}
+
 export interface ChatApiMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -20,6 +27,7 @@ export interface ChatReadingContext {
   spreadName: string;
   interpretation: string;
   focusQuestion?: string | null;
+  clarificationAnswers?: ClarificationAnswerForAI[];
   drawnCards: DrawnCardForAI[];
 }
 
@@ -180,10 +188,11 @@ export async function generateTarotInterpretationAI(
   drawnCards: DrawnCardForAI[],
   spreadName: string,
   focusQuestion?: string | null,
+  clarificationAnswers?: ClarificationAnswerForAI[] | null,
 ): Promise<string> {
   try {
     const interpretation = await invokeTarotFunction(
-      { drawnCards, spreadName, focusQuestion },
+      { drawnCards, spreadName, focusQuestion, clarificationAnswers },
       'interpretation',
       'Edge function returned empty interpretation',
     );

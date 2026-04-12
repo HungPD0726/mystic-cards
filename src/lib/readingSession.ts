@@ -1,3 +1,4 @@
+import { ClarificationAnswer } from '@/data/clarifyQuestions';
 import { DrawnCard, Orientation, SpreadType } from '@/data/types';
 
 export interface StoredReadingCard {
@@ -19,6 +20,7 @@ export interface StoredReading {
   createdAt: string;
   aiInterpretation?: string | null;
   notes?: string | null;
+  clarificationAnswers?: ClarificationAnswer[] | null;
   drawnCards: StoredReadingCard[];
 }
 
@@ -29,14 +31,21 @@ export function createStoredReading(
   spreadType: SpreadType,
   spreadName: string,
   drawnCards: DrawnCard[],
-  notes?: string | null,
+  options?: {
+    notes?: string | null;
+    clarificationAnswers?: ClarificationAnswer[] | null;
+  },
 ): StoredReading {
   return {
     spreadType,
     spreadName,
     createdAt: new Date().toISOString(),
     aiInterpretation: null,
-    notes: notes?.trim() ? notes.trim() : null,
+    notes: options?.notes?.trim() ? options.notes.trim() : null,
+    clarificationAnswers:
+      options?.clarificationAnswers && options.clarificationAnswers.length > 0
+        ? options.clarificationAnswers
+        : null,
     drawnCards: drawnCards.map((drawnCard) => ({
       cardId: drawnCard.card.id,
       cardName: drawnCard.card.name,
@@ -68,6 +77,7 @@ export function loadCurrentReading(): StoredReading | null {
       ...reading,
       aiInterpretation: reading.aiInterpretation ?? null,
       notes: reading.notes ?? null,
+      clarificationAnswers: Array.isArray(reading.clarificationAnswers) ? reading.clarificationAnswers : null,
     };
   } catch {
     return null;
@@ -89,8 +99,26 @@ export function consumeAutoAI(): boolean {
   return shouldAutoRun;
 }
 
+function formatClarificationAnswer(answer: ClarificationAnswer['answer']) {
+  if (answer === 'yes') {
+    return 'Có';
+  }
+
+  if (answer === 'no') {
+    return 'Không';
+  }
+
+  return 'Bỏ qua';
+}
+
 export function buildReadingShareText(reading: StoredReading, aiInterpretation?: string) {
   const focusText = reading.notes?.trim() ? `Câu hỏi tập trung: ${reading.notes.trim()}\n` : '';
+  const clarificationText =
+    reading.clarificationAnswers && reading.clarificationAnswers.length > 0
+      ? `Tín hiệu bổ sung:\n${reading.clarificationAnswers
+          .map((item) => `- ${item.questionText}: ${formatClarificationAnswer(item.answer)}`)
+          .join('\n')}\n`
+      : '';
   const cardSummary = reading.drawnCards
     .map((card) => `- ${card.position}: ${card.cardName} (${card.orientation === 'upright' ? 'Xuôi' : 'Ngược'})`)
     .join('\n');
@@ -100,5 +128,6 @@ export function buildReadingShareText(reading: StoredReading, aiInterpretation?:
     ? `\n\nLuận giải AI:\n${interpretationText.trim()}`
     : '';
 
-  return `Astral Arcana • ${reading.spreadName}\n${focusText}${cardSummary}${interpretation}`;
+  return `Astral Arcana • ${reading.spreadName}\n${focusText}${clarificationText}${cardSummary}${interpretation}`;
 }
+

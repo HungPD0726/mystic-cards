@@ -5,14 +5,16 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { allCards } from '@/data/cards';
+import type { TarotCard } from '@/data/types';
 import { Link } from 'react-router-dom';
-import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useTilt } from '@/hooks/useTilt';
 
 export const DailyTarotWidget = () => {
-  const [dailyCard, setDailyCard] = useState<any>(null);
+  const [dailyCard, setDailyCard] = useState<TarotCard | null>(null);
   const [isRevealed, setIsRevealed] = useState(false);
   const [isFlipping, setIsFlipping] = useState(false);
+  const tiltRef = useTilt({ max: 13, scale: 1.01, perspective: 1100 }, isRevealed);
 
   useEffect(() => {
     const savedCard = localStorage.getItem('daily_tarot_card');
@@ -20,8 +22,13 @@ export const DailyTarotWidget = () => {
     const today = new Date().toDateString();
 
     if (savedCard && savedDate === today) {
-      setDailyCard(JSON.parse(savedCard));
-      setIsRevealed(true);
+      try {
+        setDailyCard(JSON.parse(savedCard) as TarotCard);
+        setIsRevealed(true);
+      } catch {
+        localStorage.removeItem('daily_tarot_card');
+        localStorage.removeItem('daily_tarot_date');
+      }
     }
   }, []);
 
@@ -48,9 +55,9 @@ export const DailyTarotWidget = () => {
       <CardContent className="p-8">
         <div className="flex flex-col md:flex-row gap-8 items-center">
           {/* Card Display */}
-          <div className="relative w-48 h-80 perspective-1000">
+          <div ref={tiltRef} className="relative w-48 h-80 perspective-1000">
             <AnimatePresence mode="wait">
-              {!isRevealed ? (
+              {!isRevealed || !dailyCard ? (
                 <motion.div
                   key="back"
                   initial={{ rotateY: 0 }}

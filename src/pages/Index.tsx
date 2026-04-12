@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,8 +24,10 @@ import QuickAccessCard from '@/components/QuickAccessCard';
 import { DailyTarotWidget } from '@/components/DailyTarotWidget';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { zodiacSigns } from '@/data/zodiac';
 import { Badge } from '@/components/ui/badge';
+import { FloatingCards } from '@/components/FloatingCards';
 
 const topics = [
   {
@@ -87,30 +89,67 @@ const strengths = [
   },
 ];
 
+type UserProfile = Database['public']['Tables']['user_profiles']['Row'];
+
 const Index = () => {
+  const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [warpMode, setWarpMode] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated && user) {
-      const fetchProfile = async () => {
-        const { data } = await supabase
+    let isActive = true;
+
+    if (!isAuthenticated || !user) {
+      setProfile(null);
+      return () => {
+        isActive = false;
+      };
+    }
+
+    const fetchProfile = async () => {
+      try {
+        const { data, error } = await supabase
           .from('user_profiles')
           .select('*')
           .eq('user_id', user.id)
           .maybeSingle();
-        if (data) setProfile(data);
-      };
-      fetchProfile();
-    }
+
+        if (error) {
+          throw error;
+        }
+
+        if (isActive) {
+          setProfile(data ?? null);
+        }
+      } catch (error) {
+        console.warn('Failed to load user profile:', error);
+
+        if (isActive) {
+          setProfile(null);
+        }
+      }
+    };
+
+    void fetchProfile();
+
+    return () => {
+      isActive = false;
+    };
   }, [isAuthenticated, user]);
 
-  const userZodiac = profile?.zodiac_sign ? zodiacSigns.find(s => s.id === profile.zodiac_sign) : null;
+  const userZodiac = profile?.zodiac_sign ? zodiacSigns.find((sign) => sign.id === profile.zodiac_sign) : null;
+
+  const startWarpNavigation = (path: string) => {
+    setWarpMode(true);
+    window.setTimeout(() => navigate(path), 460);
+  };
 
   return (
     <div className="relative min-h-screen overflow-x-clip">
       <section className="relative isolate overflow-hidden border-b border-border/40">
-        <BackgroundParticles />
+        <BackgroundParticles warp={warpMode} />
+        <FloatingCards />
         <div className="mystic-grid absolute inset-0 opacity-30" />
         <div
           className="absolute inset-0 opacity-60"
@@ -161,18 +200,16 @@ const Index = () => {
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="mt-8 inline-flex items-center gap-4 px-6 py-3 rounded-2xl bg-gold/5 border border-gold/20 backdrop-blur-sm shadow-lg shadow-gold/5"
+                  className="mt-8 inline-flex items-center gap-4 rounded-2xl border border-gold/20 bg-gold/5 px-6 py-3 backdrop-blur-sm shadow-lg shadow-gold/5"
                 >
                   <div className="text-3xl">{userZodiac.symbol}</div>
                   <div className="text-left">
-                    <p className="text-xs font-bold text-gold uppercase tracking-widest">Tử vi hàng ngày • {userZodiac.name}</p>
-                    <p className="text-sm text-foreground/90 max-w-xs line-clamp-1 italic">
-                      "{userZodiac.advice}"
-                    </p>
+                    <p className="text-xs font-bold uppercase tracking-widest text-gold">Tử vi hằng ngày • {userZodiac.name}</p>
+                    <p className="max-w-xs truncate text-sm italic text-foreground/90">"{userZodiac.advice}"</p>
                   </div>
                   <Button variant="ghost" size="icon" asChild className="text-gold hover:bg-gold/10">
                     <Link to="/zodiac">
-                      <ChevronRight className="w-5 h-5" />
+                      <ChevronRight className="h-5 w-5" />
                     </Link>
                   </Button>
                 </motion.div>
@@ -185,13 +222,11 @@ const Index = () => {
               transition={{ duration: 0.7, delay: 0.35 }}
               className="mt-10 flex flex-col justify-center gap-4 sm:flex-row"
             >
-              <Link to="/reading">
-                <Button size="lg" className="min-w-[220px] gap-2 px-8 py-6 text-base glow-gold">
-                  <Sparkles className="h-5 w-5" />
-                  Bắt đầu xem bài
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
+              <Button size="lg" className="min-w-[220px] gap-2 px-8 py-6 text-base glow-gold" onClick={() => startWarpNavigation('/reading')}>
+                <Sparkles className="h-5 w-5" />
+                Bắt đầu xem bài
+                <ArrowRight className="h-4 w-4" />
+              </Button>
               <Link to="/cards">
                 <Button
                   variant="outline"
@@ -249,17 +284,17 @@ const Index = () => {
                 {['Quá khứ', 'Hiện tại', 'Tương lai'].map((slot, idx) => (
                   <Button
                     key={slot}
-                    asChild
                     variant="outline"
                     className="h-auto w-full justify-between rounded-xl border-gold/25 bg-background/45 px-4 py-3 text-left hover:border-gold/45 hover:bg-secondary/40"
+                    onClick={() => startWarpNavigation('/reading/three-card')}
                   >
-                    <Link to="/reading/three-card" className="w-full">
+                    <span className="inline-flex w-full items-center justify-between gap-3">
                       <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
                         <span className="text-base text-gold">{spreads[1].icon}</span>
                         {slot}
                       </span>
                       <span className="text-xs text-muted-foreground">Lá {idx + 1}</span>
-                    </Link>
+                    </span>
                   </Button>
                 ))}
               </div>
@@ -272,20 +307,21 @@ const Index = () => {
               </div>
 
               <div className="mt-5 text-center">
-                <Link
-                  to="/reading/three-card"
+                <button
+                  type="button"
+                  onClick={() => startWarpNavigation('/reading/three-card')}
                   className="inline-flex items-center gap-2 text-sm font-medium text-gold transition-colors hover:text-amber-300"
                 >
                   Chọn trải bài này <ChevronRight className="h-4 w-4" />
-                </Link>
+                </button>
               </div>
             </div>
           </motion.div>
         </div>
       </section>
 
-      <section className="container mx-auto px-4 -mt-12 mb-16 relative z-20">
-        <div className="max-w-4xl mx-auto">
+      <section className="relative z-20 -mt-12 mb-16 container mx-auto px-4">
+        <div className="mx-auto max-w-4xl">
           <DailyTarotWidget />
         </div>
       </section>
@@ -374,9 +410,13 @@ const Index = () => {
             viewport={{ once: true }}
             className="mt-8 text-center"
           >
-            <Link to="/reading" className="inline-flex items-center text-sm text-muted-foreground transition-colors hover:text-gold">
+            <button
+              type="button"
+              onClick={() => startWarpNavigation('/reading')}
+              className="inline-flex items-center text-sm text-muted-foreground transition-colors hover:text-gold"
+            >
               Xem tất cả kiểu trải bài <ChevronRight className="ml-1 h-3 w-3" />
-            </Link>
+            </button>
           </motion.div>
         </div>
       </section>
