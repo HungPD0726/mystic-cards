@@ -31,7 +31,7 @@ export function TarotCard({
   size = 'md',
 }: TarotCardProps) {
   const placeholderSrc = publicAsset('placeholder.svg');
-  const tiltRef = useTilt({}, revealed);
+  const tiltRef = useTilt<HTMLButtonElement>({}, revealed);
   const previousRevealedRef = useRef(revealed);
 
   useEffect(() => {

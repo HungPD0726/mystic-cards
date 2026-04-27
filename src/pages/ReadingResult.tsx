@@ -53,7 +53,7 @@ function buildCardConclusion(card: ResultReadingCard) {
 }
 
 function TiltedResultCard({ card, index, placeholderSrc }: { card: ResultReadingCard; index: number; placeholderSrc: string }) {
-  const tiltRef = useTilt({ max: 14, scale: 1.015, perspective: 1200 }, true);
+  const tiltRef = useTilt<HTMLDivElement>({ max: 14, scale: 1.015, perspective: 1200 }, true);
 
   return (
     <motion.div
@@ -407,8 +407,14 @@ const ReadingResult = () => {
   const saveButtonDisabled = isSaving || isSyncingSavedAI || (savedReadingTarget !== null && !needsAiResync);
 
   return (
-    <div className="relative min-h-screen overflow-x-clip">
+    <div className="relative min-h-screen overflow-x-clip pb-32 md:pb-10">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,hsl(var(--gold)/0.16),transparent_42%),radial-gradient(circle_at_85%_18%,hsl(var(--primary)/0.14),transparent_28%),radial-gradient(circle_at_12%_90%,hsl(var(--accent)/0.14),transparent_26%)]" />
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute -top-24 left-1/2 h-[360px] w-[720px] -translate-x-1/2 rounded-full bg-gold/10 blur-3xl"
+        animate={{ opacity: [0.25, 0.45, 0.25] }}
+        transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+      />
 
       <div className="container relative mx-auto px-4 py-8 md:py-10">
         <motion.div
@@ -425,7 +431,12 @@ const ReadingResult = () => {
               <h1 className="text-3xl font-bold text-foreground md:text-4xl" style={{ fontFamily: 'Cinzel, serif' }}>
                 Kết quả trải bài
               </h1>
-              <p className="mt-2 text-muted-foreground">{reading.spreadName}</p>
+              <div className="mt-3 flex items-center gap-3 max-w-sm">
+                <span className="h-px flex-1 bg-gradient-to-r from-gold/40 via-gold/20 to-transparent" />
+                <span className="text-gold/70 text-xs">✦</span>
+                <span className="h-px flex-1 bg-gradient-to-l from-transparent via-gold/20 to-gold/40" />
+              </div>
+              <p className="mt-3 text-muted-foreground">{reading.spreadName}</p>
               {reading.notes?.trim() && (
                 <div className="mt-4 rounded-2xl border border-gold/20 bg-gold/5 px-4 py-3">
                   <p className="text-xs uppercase tracking-[0.2em] text-gold/80">Câu hỏi tập trung</p>
