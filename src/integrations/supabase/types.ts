@@ -14,13 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      favorite_cards: {
+        Row: {
+          card_slug: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          card_slug: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          card_slug?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       readings: {
         Row: {
           ai_interpretation: string | null
           created_at: string
           drawn_cards: Json
           id: string
+          is_ai_interpreted: boolean
           notes: string | null
+          spread_id: string | null
           spread_name: string
           spread_type: string
           updated_at: string
@@ -31,7 +54,9 @@ export type Database = {
           created_at?: string
           drawn_cards?: Json
           id?: string
+          is_ai_interpreted?: boolean
           notes?: string | null
+          spread_id?: string | null
           spread_name: string
           spread_type: string
           updated_at?: string
@@ -42,11 +67,49 @@ export type Database = {
           created_at?: string
           drawn_cards?: Json
           id?: string
+          is_ai_interpreted?: boolean
           notes?: string | null
+          spread_id?: string | null
           spread_name?: string
           spread_type?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          birth_date: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+          zodiac_sign: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          birth_date?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+          zodiac_sign?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          birth_date?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+          zodiac_sign?: string | null
         }
         Relationships: []
       }
