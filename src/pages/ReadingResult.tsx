@@ -53,7 +53,7 @@ function buildCardConclusion(card: ResultReadingCard) {
 }
 
 function TiltedResultCard({ card, index, placeholderSrc }: { card: ResultReadingCard; index: number; placeholderSrc: string }) {
-  const tiltRef = useTilt({ max: 14, scale: 1.015, perspective: 1200 }, true);
+  const tiltRef = useTilt<HTMLDivElement>({ max: 14, scale: 1.015, perspective: 1200 }, true);
 
   return (
     <motion.div

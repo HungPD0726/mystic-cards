@@ -14,7 +14,7 @@ export const DailyTarotWidget = () => {
   const [dailyCard, setDailyCard] = useState<TarotCard | null>(null);
   const [isRevealed, setIsRevealed] = useState(false);
   const [isFlipping, setIsFlipping] = useState(false);
-  const tiltRef = useTilt({ max: 13, scale: 1.01, perspective: 1100 }, isRevealed);
+  const tiltRef = useTilt<HTMLDivElement>({ max: 13, scale: 1.01, perspective: 1100 }, isRevealed);
 
   useEffect(() => {
     const savedCard = localStorage.getItem('daily_tarot_card');
