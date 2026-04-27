@@ -1,21 +1,19 @@
 import { useEffect, useRef } from 'react';
 import VanillaTilt, { type HTMLVanillaTiltElement, type TiltOptions } from 'vanilla-tilt';
 
-type TiltElement = HTMLVanillaTiltElement;
-
-export function useTilt(options: TiltOptions = {}, enabled = true) {
-  const ref = useRef<TiltElement | null>(null);
+export function useTilt<T extends HTMLElement = HTMLElement>(options: TiltOptions = {}, enabled = true) {
+  const ref = useRef<T | null>(null);
   const optionsRef = useRef(options);
   optionsRef.current = options;
   const optionsKey = JSON.stringify(options);
 
   useEffect(() => {
-    const element = ref.current;
+    const element = ref.current as (T & Partial<HTMLVanillaTiltElement>) | null;
     if (!element || !enabled) {
       return;
     }
 
-    VanillaTilt.init(element, {
+    VanillaTilt.init(element as unknown as HTMLVanillaTiltElement, {
       max: 15,
       speed: 400,
       glare: true,
@@ -26,7 +24,7 @@ export function useTilt(options: TiltOptions = {}, enabled = true) {
     });
 
     return () => {
-      element.vanillaTilt?.destroy();
+      (element as Partial<HTMLVanillaTiltElement>).vanillaTilt?.destroy();
     };
   }, [enabled, optionsKey]);
 
