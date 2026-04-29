@@ -32,7 +32,7 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-xl">
       <div className="container mx-auto h-16 px-4">
         <div className="flex h-full items-center justify-between gap-3">
-          <Link to="/" className="group flex items-center gap-2.5">
+          <Link to="/" className="group flex items-center gap-2.5" aria-label="Astral Arcana - Trang chủ">
             <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-gold/40 bg-gradient-to-br from-amber-300/20 to-purple-500/15 shadow-[0_0_20px_hsl(var(--gold)/0.18)]">
               <img src={brandMark} alt="Astral Arcana" className="h-8 w-8" />
             </div>
@@ -60,8 +60,11 @@ export function Header() {
                       ? 'bg-secondary text-gold'
                       : 'text-muted-foreground hover:bg-secondary/40 hover:text-foreground',
                   )}
+                  aria-label={item.label}
+                  title={item.label}
+                  aria-current={isActive ? 'page' : undefined}
                 >
-                  <item.icon className="h-4 w-4" />
+                  <item.icon className="h-4 w-4" aria-hidden="true" />
                   <span className="hidden md:inline">{item.label}</span>
                 </Link>
               );
@@ -69,8 +72,8 @@ export function Header() {
 
             <PrivacyModal
               trigger={
-                <button className="hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary/40 hover:text-foreground md:flex">
-                  <Shield className="h-4 w-4" />
+                <button type="button" className="hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary/40 hover:text-foreground md:flex">
+                  <Shield className="h-4 w-4" aria-hidden="true" />
                   <span className="hidden lg:inline">Bảo mật</span>
                 </button>
               }
@@ -78,8 +81,8 @@ export function Header() {
 
             <DonateModal
               trigger={
-                <button className="hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary/40 hover:text-foreground md:flex">
-                  <Coffee className="h-4 w-4" />
+                <button type="button" className="hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary/40 hover:text-foreground md:flex">
+                  <Coffee className="h-4 w-4" aria-hidden="true" />
                   <span className="hidden lg:inline">Ủng hộ</span>
                 </button>
               }
@@ -96,14 +99,15 @@ export function Header() {
                       : 'text-muted-foreground hover:bg-secondary/40 hover:text-foreground',
                   )}
                 >
-                  <User className="h-4 w-4" />
+                  <User className="h-4 w-4" aria-hidden="true" />
                   <span className="hidden max-w-[120px] truncate lg:inline">{displayName}</span>
                 </Link>
                 <button
+                  type="button"
                   onClick={handleLogout}
                   className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary/40 hover:text-foreground"
                 >
-                  <LogOut className="h-4 w-4" />
+                  <LogOut className="h-4 w-4" aria-hidden="true" />
                   <span className="hidden lg:inline">Đăng xuất</span>
                 </button>
               </>
@@ -117,7 +121,7 @@ export function Header() {
                     : 'text-muted-foreground hover:bg-secondary/40 hover:text-foreground',
                 )}
               >
-                <LogIn className="h-4 w-4" />
+                <LogIn className="h-4 w-4" aria-hidden="true" />
                 <span className="hidden lg:inline">Đăng nhập</span>
               </Link>
             )}
